@@ -18,6 +18,8 @@ type ClientMovedEvent struct {
 	api         *TS3Api
 }
 
+var _ Event = (*ClientMovedEvent)(nil)
+
 func (event *ClientMovedEvent) setParam(key string, val string) (err error) {
 	switch key {
 	case "ctid":
@@ -81,4 +83,7 @@ func (event *ClientMovedEvent) Ids() []int {
 
 func (event *ClientMovedEvent) Api() *TS3Api {
 	return event.api
+}
+func (event *ClientMovedEvent) setApi(api *TS3Api) {
+	event.api = api
 }

@@ -8,4 +8,5 @@ type TS3Listener interface {
 	ClientJoined(event *ClientJoinEvent)
 	ClientMoved(event *ClientMovedEvent)
 	ClientLeft(event *ClientLeaveEvent)
+	ServerEdited(event *ServerEditedEvent)
 }

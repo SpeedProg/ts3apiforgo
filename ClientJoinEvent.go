@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+var _ Event = (*ClientJoinEvent)(nil)
+
 type ClientJoinEvent struct {
 	clMetaData                   string // client_meta_data
 	chFromId                     int
@@ -334,4 +336,8 @@ func (event *ClientJoinEvent) Badages() string {
 
 func (event *ClientJoinEvent) Api() *TS3Api {
 	return event.api
+}
+
+func (event *ClientJoinEvent) setApi(api *TS3Api) {
+	event.api = api
 }

@@ -5,6 +5,8 @@ import (
 	"strconv"
 )
 
+var _ Event = (*ClientLeaveEvent)(nil)
+
 type ClientLeaveEvent struct {
 	chFromId    int
 	chToId      int
@@ -43,7 +45,6 @@ func (event *ClientLeaveEvent) setParam(key string, val string) (err error) {
 	}
 	return
 }
-
 func (event *ClientLeaveEvent) ChannelFromId() int {
 	return event.chFromId
 }
@@ -82,4 +83,8 @@ func (event *ClientLeaveEvent) Bantime() int {
 
 func (event *ClientLeaveEvent) Api() *TS3Api {
 	return event.api
+}
+
+func (event *ClientLeaveEvent) setApi(api *TS3Api) {
+	event.api = api
 }

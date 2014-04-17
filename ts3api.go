@@ -39,6 +39,8 @@ func (api TS3Api) reader(ch chan<- bool) {
 				api.dispatchClientJoinMessage(prefixSplits[1])
 			case "notifyclientmoved":
 				api.dispatchClientMovedMessage(prefixSplits[1])
+			case "notifyserveredited":
+				api.dispatchServerEditedMessage(prefixSplits[1])
 			default:
 				logger.Println("Add To lineList")
 				api.lineList.PushBack(msg)
@@ -56,27 +58,39 @@ func (api TS3Api) reader(ch chan<- bool) {
 	ch <- true
 }
 
-func (api TS3Api) dispatchClientMovedMessage(msg string) {
-	clientMovedEv := api.clientMovedEventFromString(msg)
+func (api TS3Api) dispatchServerEditedMessage(msg string) {
+	event := &ServerEditedEvent{}
+	api.initEventFromString(event, msg)
 	for element := api.listenerList.Front(); element != nil; element = element.Next() {
 		listener := element.Value.(TS3Listener)
-		go listener.ClientMoved(clientMovedEv)
+		go listener.ServerEdited(event)
+	}
+}
+
+func (api TS3Api) dispatchClientMovedMessage(msg string) {
+	clientMoved := &ClientMovedEvent{}
+	api.initEventFromString(clientMoved, msg)
+	for element := api.listenerList.Front(); element != nil; element = element.Next() {
+		listener := element.Value.(TS3Listener)
+		go listener.ClientMoved(clientMoved)
 	}
 }
 
 func (api TS3Api) dispatchClientJoinMessage(msg string) {
-	clientJoinEv := api.clientJoinEventFromString(msg)
+	clientJoin := &ClientJoinEvent{}
+	api.initEventFromString(clientJoin, msg)
 	for element := api.listenerList.Front(); element != nil; element = element.Next() {
 		listener := element.Value.(TS3Listener)
-		go listener.ClientJoined(clientJoinEv)
+		go listener.ClientJoined(clientJoin)
 	}
 }
 
 func (api TS3Api) dispatchClientLeaveMessage(msg string) {
-	clientLeaveEv := api.clientLeaveEventFromString(msg)
+	clientLeave := &ClientLeaveEvent{}
+	api.initEventFromString(clientLeave, msg)
 	for element := api.listenerList.Front(); element != nil; element = element.Next() {
 		listener := element.Value.(TS3Listener)
-		go listener.ClientLeft(clientLeaveEv)
+		go listener.ClientLeft(clientLeave)
 	}
 }
 
@@ -175,4 +189,17 @@ func (api TS3Api) clientMovedEventFromString(msg string) *ClientMovedEvent {
 	}
 	event.api = &api
 	return &event
+}
+
+func (api TS3Api) initEventFromString(event Event, msg string) {
+	params := strings.Split(msg, " ")
+	for _, message := range params {
+		if strings.Contains(message, "=") {
+			keyval := strings.SplitN(message, "=", 2)
+			event.setParam(keyval[0], keyval[1])
+		} else {
+			event.setParam(message, "")
+		}
+	}
+	event.setApi(&api)
 }
