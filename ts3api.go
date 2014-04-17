@@ -2,9 +2,7 @@
 package ts3api
 
 import (
-	"bufio"
 	"container/list"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -12,7 +10,7 @@ import (
 	"time"
 )
 
-var logger *log.Logger = log.New(bufio.NewWriter(os.Stdout), "TS3Api: ", log.Ldate|log.Ltime|log.Lshortfile)
+var logger *log.Logger = log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lshortfile)
 
 type TS3Api struct {
 	conn         *ts3Connection
@@ -22,16 +20,17 @@ type TS3Api struct {
 
 func (api TS3Api) reader(ch chan<- bool) {
 	for {
-
+		logger.Println("Waiting for line...")
 		msg, err := api.conn.ReadString('\n')
 		if err != nil {
-			fmt.Println(err.Error())
+			logger.Fatalln(err.Error())
 			break
 		}
 		msg = strings.TrimSpace(msg)
+		logger.Println(msg)
 		prefixSplits := strings.SplitN(msg, " ", 2)
 		if len(prefixSplits) < 2 {
-			// TODO: handle weired stuff
+			api.lineList.PushBack(msg)
 		} else {
 			switch prefixSplits[0] {
 			case "notifytextmessage":
@@ -40,6 +39,9 @@ func (api TS3Api) reader(ch chan<- bool) {
 				api.dispatchClientJoinMessage(prefixSplits[1])
 			case "notifyclientmoved":
 				api.dispatchClientMovedMessage(prefixSplits[1])
+			default:
+				logger.Println("Add To lineList")
+				api.lineList.PushBack(msg)
 			}
 		}
 		/*
@@ -49,9 +51,7 @@ func (api TS3Api) reader(ch chan<- bool) {
 			Read: notifycliententerview cfid=0 ctid=1 reasonid=0 clid=19 client_unique_identifier=a8DECwLONmPE4kNW0W2C3xDiRIA= client_nickname=Manfred\sfrom\s192.168.0.1:57329 client_input_muted=0 client_output_muted=0 client_outputonly_muted=0 client_input_hardware=0 client_output_hardware=0 client_meta_data client_is_recording=0 client_database_id=4 client_channel_group_id=8 client_servergroups=6,11 client_away=0 client_away_message client_type=1 client_flag_avatar=84ce0342c818723a75c51af66a723d2d client_talk_power=99 client_talk_request=0 client_talk_request_msg client_description=BETTER\sTHAN\sYUOF client_is_talker=0 client_is_priority_speaker=0 client_unread_messages=0 client_nickname_phonetic client_needed_serverquery_view_power=75 client_icon_id=0 client_is_channel_commander=0 client_country client_channel_group_inherited_channel_id=1 client_badges
 
 		*/
-		api.lineList.PushBack(msg)
 
-		logger.Println("Read: " + msg)
 	}
 	ch <- true
 }
@@ -80,18 +80,7 @@ func (api TS3Api) dispatchClientMovedMessage(msg string) {
 }
 
 func (api TS3Api) dispatchClientJoinMessage(msg string) {
-	clientJoinEv := &ClientJoinEvent{}
-	params := strings.Split(msg, " ")
-	for _, message := range params {
-		if strings.Contains(message, "=") {
-			keyval := strings.SplitN(message, "=", 2)
-			switch keyval[0] {
-			case "clid":
-				clientJoinEv.cId, _ = strconv.Atoi(keyval[1])
-			}
-		}
-	}
-	clientJoinEv.api = &api
+	clientJoinEv := api.clientJoinEventFromString(msg)
 	for element := api.listenerList.Front(); element != nil; element = element.Next() {
 		listener := element.Value.(TS3Listener)
 		go listener.ClientJoined(clientJoinEv)
@@ -99,26 +88,7 @@ func (api TS3Api) dispatchClientJoinMessage(msg string) {
 }
 
 func (api TS3Api) dispatchClientLeaveMessage(msg string) {
-	clientLeaveEv := &ClientLeaveEvent{}
-	params := strings.Split(msg, " ")
-	for _, message := range params {
-		if strings.Contains(message, "=") {
-			keyval := strings.SplitN(message, "=", 2)
-			switch keyval[0] {
-			case "cfid":
-				clientLeaveEv.chFromId, _ = strconv.Atoi(keyval[1])
-			case "clid":
-				clientLeaveEv.clId, _ = strconv.Atoi(keyval[1])
-			case "ctid":
-				clientLeaveEv.chToId, _ = strconv.Atoi(keyval[1])
-			case "reasonid":
-				clientLeaveEv.reasonId, _ = strconv.Atoi(keyval[1])
-			case "reasonmsg":
-				clientLeaveEv.reasonMsg = keyval[1]
-			}
-		}
-	}
-	clientLeaveEv.api = &api
+	clientLeaveEv := api.clientLeaveEventFromString(msg)
 	for element := api.listenerList.Front(); element != nil; element = element.Next() {
 		listener := element.Value.(TS3Listener)
 		go listener.ClientLeft(clientLeaveEv)
@@ -160,4 +130,46 @@ func (api TS3Api) readLine() (msg string) {
 	msg = element.Value.(string)
 	logger.Println("-->" + msg + "<--")
 	return
+}
+
+func (api TS3Api) doCommand(cmd string) (answer string) {
+	api.conn.DoCommand(cmd)
+	answer = api.readLine()
+	return
+}
+
+/*
+	Expects the "notifycliententerview " to be allready removed!
+*/
+func (api TS3Api) clientJoinEventFromString(msg string) *ClientJoinEvent {
+	event := ClientJoinEvent{}
+	params := strings.Split(msg, " ")
+	for _, message := range params {
+		if strings.Contains(message, "=") {
+			keyval := strings.SplitN(message, "=", 2)
+			event.setParam(keyval[0], keyval[1])
+		} else {
+			event.setParam(message, "")
+		}
+	}
+	event.api = &api
+	return &event
+}
+
+/*
+	Expects the "notifycliententerview " to be allready removed!
+*/
+func (api TS3Api) clientLeaveEventFromString(msg string) *ClientLeaveEvent {
+	event := ClientLeaveEvent{}
+	params := strings.Split(msg, " ")
+	for _, message := range params {
+		if strings.Contains(message, "=") {
+			keyval := strings.SplitN(message, "=", 2)
+			event.setParam(keyval[0], keyval[1])
+		} else {
+			event.setParam(message, "")
+		}
+	}
+	event.api = &api
+	return &event
 }

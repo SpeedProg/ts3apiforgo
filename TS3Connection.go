@@ -32,13 +32,9 @@ func (conn ts3Connection) ReadLine() (line string, err error) {
 func (conn ts3Connection) Close() {
 	conn.textprotoConn.Close()
 }
-func (conn ts3Connection) DoCommand(cmd string) (answer string) {
-	logger.Println("-->" + cmd + "<--")
+func (conn ts3Connection) DoCommand(cmd string) {
+	logger.Println(cmd)
 	conn.textprotoConn.W.WriteString(cmd + "\n")
 	conn.textprotoConn.W.Flush()
-	answer, err := conn.ReadLine()
-	if err != nil {
-		logger.Fatalln(err.Error())
-	}
 	return
 }

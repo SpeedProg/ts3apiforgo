@@ -33,26 +33,27 @@ func (api TS3Api) RegisterTS3Listener(listener TS3Listener) {
 
 func (api TS3Api) Login(user, password string) {
 	cmd := "login " + user + " " + password
-	api.conn.DoCommand(cmd)
+	api.doCommand(cmd)
 }
 
 func (api TS3Api) Logout() {
 	cmd := "logout"
-	api.conn.DoCommand(cmd)
+	api.doCommand(cmd)
 }
 
 func (api TS3Api) Quit() {
 	cmd := "quit"
-	api.conn.DoCommand(cmd)
+	api.doCommand(cmd)
 	api.conn.Close()
 }
 
-func (api TS3Api) RegisterEvent(event string) {
+// id is ignored for every event except channel
+func (api TS3Api) RegisterEvent(event string, id int) {
 	cmd := "servernotifyregister event=" + event
 	if event == "channel" {
-		api.conn.DoCommand(cmd + " id=1")
+		api.doCommand(cmd + " id=" + strconv.Itoa(id))
 	} else {
-		api.conn.DoCommand(cmd)
+		api.doCommand(cmd)
 	}
 }
 
@@ -73,18 +74,18 @@ func (api TS3Api) SendTextMessage(targetmode int, target int, msg string) (err e
 		return
 	}
 	cmd := "sendtextmessage targetmode=" + strconv.Itoa(targetmode) + " target=" + strconv.Itoa(target) + " msg=" + msg
-	api.conn.DoCommand(cmd)
+	api.doCommand(cmd)
 	return
 }
 
 func (api TS3Api) SelectVirtualServer(serverid int) {
 	cmd := "use " + strconv.Itoa(serverid)
-	api.conn.DoCommand(cmd)
+	api.doCommand(cmd)
 }
 
 func (api TS3Api) WhoAmI() (client *Me) {
 	cmd := "whoami"
-	answer := api.conn.DoCommand(cmd)
+	answer := api.doCommand(cmd)
 	//"virtualserver_status=online virtualserver_id=1 virtualserver_unique_identifier=Ee9hKUn3SzddLH\/nzUeQxevRLNo= virtualserver_port=9987 client_id=1 client_channel_id=1 client_nickname=TS3TriviaBot\sfrom\s92.194.104.232:65235 client_database_id=32 client_login_name=TS3ToIRCBridge client_unique_identifier=puCS36nEiC9WiSN2Yvp5dlft7wY= client_origin_server_id=1"
 	arr := strings.Split(answer, " ")
 	client = &Me{}
@@ -106,10 +107,10 @@ func (api TS3Api) WhoAmI() (client *Me) {
 
 func (api TS3Api) ClientMove(clid int, cid int) {
 	cmd := "clientmove clid=" + strconv.Itoa(clid) + " cid=" + strconv.Itoa(cid)
-	api.conn.DoCommand(cmd)
+	api.doCommand(cmd)
 }
 
 func (api TS3Api) SetNick(nick string) {
 	cmd := "clientupdate client_nickname=" + nick
-	api.conn.DoCommand(cmd)
+	api.doCommand(cmd)
 }
