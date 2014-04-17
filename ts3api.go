@@ -57,22 +57,7 @@ func (api TS3Api) reader(ch chan<- bool) {
 }
 
 func (api TS3Api) dispatchClientMovedMessage(msg string) {
-	clientMovedEv := &ClientMovedEvent{}
-	params := strings.Split(msg, " ")
-	for _, message := range params {
-		if strings.Contains(message, "=") {
-			keyval := strings.SplitN(message, "=", 2)
-			switch keyval[0] {
-			case "ctid":
-				clientMovedEv.chTargetId, _ = strconv.Atoi(keyval[1])
-			case "reasonid":
-				clientMovedEv.reasonId, _ = strconv.Atoi(keyval[1])
-			case "clid":
-				clientMovedEv.cId, _ = strconv.Atoi(keyval[1])
-			}
-		}
-	}
-	clientMovedEv.api = &api
+	clientMovedEv := api.clientMovedEventFromString(msg)
 	for element := api.listenerList.Front(); element != nil; element = element.Next() {
 		listener := element.Value.(TS3Listener)
 		go listener.ClientMoved(clientMovedEv)
@@ -157,10 +142,28 @@ func (api TS3Api) clientJoinEventFromString(msg string) *ClientJoinEvent {
 }
 
 /*
-	Expects the "notifycliententerview " to be allready removed!
+	Expects the "notifyclientleftview " to be allready removed!
 */
 func (api TS3Api) clientLeaveEventFromString(msg string) *ClientLeaveEvent {
 	event := ClientLeaveEvent{}
+	params := strings.Split(msg, " ")
+	for _, message := range params {
+		if strings.Contains(message, "=") {
+			keyval := strings.SplitN(message, "=", 2)
+			event.setParam(keyval[0], keyval[1])
+		} else {
+			event.setParam(message, "")
+		}
+	}
+	event.api = &api
+	return &event
+}
+
+/*
+	Expects the " " to be allready removed!
+*/
+func (api TS3Api) clientMovedEventFromString(msg string) *ClientMovedEvent {
+	event := ClientMovedEvent{}
 	params := strings.Split(msg, " ")
 	for _, message := range params {
 		if strings.Contains(message, "=") {
