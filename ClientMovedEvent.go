@@ -20,6 +20,6 @@ func (event ClientMovedEvent) ClientId() int {
 	return event.cId
 }
 
-func (event ClientMovedEvent) TS3Api() *TS3Api {
+func (event ClientMovedEvent) Api() *TS3Api {
 	return event.api
 }

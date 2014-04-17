@@ -13,6 +13,6 @@ func (event ClientJoinEvent) ClientId() int {
 	return event.cId
 }
 
-func (event ClientJoinEvent) TS3Api() *TS3Api {
+func (event ClientJoinEvent) Api() *TS3Api {
 	return event.api
 }
