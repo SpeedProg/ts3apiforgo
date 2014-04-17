@@ -12,7 +12,7 @@ type ClientJoinEvent struct {
 	chFromId                     int
 	chToId                       int
 	reasonId                     int
-	clUIdent                     string
+	clUID                        string
 	clNick                       string
 	clInputMuted                 bool
 	clOutputMuted                bool
@@ -56,7 +56,7 @@ func (event *ClientJoinEvent) setParam(key string, val string) (err error) {
 	case "reasonid":
 		event.reasonId, err = strconv.Atoi(val)
 	case "client_unique_identifier":
-		event.clUIdent = val
+		event.clUID = val
 	case "client_nickname":
 		event.clNick = val
 	case "client_input_muted":
@@ -214,8 +214,8 @@ func (event *ClientJoinEvent) ReasonId() int {
 	return event.reasonId
 }
 
-func (event *ClientJoinEvent) UniqueId() string {
-	return event.clUIdent
+func (event *ClientJoinEvent) UID() string {
+	return event.clUID
 }
 
 func (event *ClientJoinEvent) Nick() string {

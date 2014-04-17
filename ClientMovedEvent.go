@@ -14,7 +14,7 @@ type ClientMovedEvent struct {
 	clIds       []int
 	invokerName string
 	invokerId   int
-	invokerUId  string
+	invokerUID  string
 	api         *TS3Api
 }
 
@@ -29,7 +29,7 @@ func (event *ClientMovedEvent) setParam(key string, val string) (err error) {
 	case "invokername":
 		event.invokerName = val
 	case "invokeruid":
-		event.invokerUId = val
+		event.invokerUID = val
 	case "reasonmsg":
 		event.reasonMsg = val
 	case "clid":
@@ -51,8 +51,8 @@ func (event *ClientMovedEvent) setParam(key string, val string) (err error) {
 	return
 }
 
-func (event *ClientMovedEvent) InvokerUId() string {
-	return event.invokerUId
+func (event *ClientMovedEvent) InvokerUID() string {
+	return event.invokerUID
 }
 
 func (event *ClientMovedEvent) InvokerId() int {

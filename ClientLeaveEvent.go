@@ -13,7 +13,7 @@ type ClientLeaveEvent struct {
 	clId        int
 	invokerId   int
 	invokerName string
-	invokerUId  string
+	invokerUID  string
 	bantime     int
 	api         *TS3Api
 }
@@ -33,7 +33,7 @@ func (event *ClientLeaveEvent) setParam(key string, val string) (err error) {
 	case "invokername":
 		event.invokerName = val
 	case "invokeruid":
-		event.invokerUId = val
+		event.invokerUID = val
 	case "clid":
 		event.clId, err = strconv.Atoi(val)
 	case "bantime":
@@ -72,8 +72,8 @@ func (event *ClientLeaveEvent) InvokerName() string {
 	return event.invokerName
 }
 
-func (event *ClientLeaveEvent) InvokerUId() string {
-	return event.invokerUId
+func (event *ClientLeaveEvent) InvokerUID() string {
+	return event.invokerUID
 }
 
 func (event *ClientLeaveEvent) Bantime() int {
