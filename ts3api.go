@@ -221,13 +221,18 @@ func (api TS3Api) callListeners(event Event) {
 			listener := element.Value.(TS3Listener)
 			go listener.ServerEdited(event.(*ServerEditedEvent))
 		}
-	/*case *TextMessageEvent:
-	for element := api.listenerList.Front(); element != nil; element = element.Next() {
-		listener := element.Value.(TS3Listener)
-		go listener.TextMessage(event.(*TextMessageEvent))
-	}*/
+	case *TextMessageEvent:
+		for element := api.listenerList.Front(); element != nil; element = element.Next() {
+			listener := element.Value.(TS3Listener)
+			go listener.TextMessage(event.(*TextMessageEvent))
+		}
+	case *TokenUsedEvent:
+		for element := api.listenerList.Front(); element != nil; element = element.Next() {
+			listener := element.Value.(TS3Listener)
+			go listener.TokenUsed(event.(*TokenUsedEvent))
+		}
 	default:
-		logger.Error("Event of Type: %s could not be handled.", t)
+		logger.Error("Event of Type: %+v could not be handled.", t)
 	}
 
 }
