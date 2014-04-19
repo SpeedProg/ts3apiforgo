@@ -127,3 +127,26 @@ func (api TS3Api) SetNick(nick string) {
 	cmd := "clientupdate client_nickname=" + nick
 	api.doCommand(cmd)
 }
+
+func (api TS3Api) Version() (version string, build uint64, platform string) {
+	answers, _ := api.doCommand("version")
+	var answer string = answers.Front().Value.(string)
+	parts := strings.Split(answer, " ")
+	var err error
+	for i := 0; i < 3; i++ {
+		var tparts []string = strings.SplitN(parts[i], "=", 2)
+		switch i {
+		case 0:
+			version = tparts[1]
+		case 1:
+			build, err = strconv.ParseUint(tparts[1], 10, 64)
+			if err != nil {
+				logger.Error(err.Error())
+			}
+		case 2:
+			platform = tparts[1]
+		}
+	}
+	return
+}
+
