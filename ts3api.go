@@ -24,7 +24,7 @@ func init() {
 
 func (api TS3Api) reader(ch chan<- bool) {
 	for {
-		logger.Error("Waiting for line...")
+		logger.Trace("Waiting for Message Queue...")
 		msg, err := api.conn.ReadString('\n')
 		if err != nil {
 			logger.Error(err.Error())
@@ -63,8 +63,8 @@ func (api TS3Api) reader(ch chan<- bool) {
 
 			}
 		} else {
-			logger.Trace("Added Line: %s", msg)
 			api.lineList.PushBack(msg)
+			logger.Trace("Added To Message Queue: %s", msg)
 		}
 
 	}
@@ -150,13 +150,23 @@ func (api TS3Api) readLine() (msg string) {
 	element := api.lineList.Front()
 	api.lineList.Remove(element)
 	msg = element.Value.(string)
-	logger.Error("-->" + msg + "<--")
+	logger.Trace("Taken From Message Queue: %s", msg)
 	return
 }
 
-func (api TS3Api) doCommand(cmd string) (answer string) {
+func (api TS3Api) doCommand(cmd string) (answersList *list.List, err error) {
 	api.conn.DoCommand(cmd)
-	answer = api.readLine()
+	answersList = list.New()
+	var answer string
+	for {
+		answer = api.readLine()
+		if strings.HasPrefix(answer, "error") {
+			break
+		} else {
+			answersList.PushBack(answer)
+		}
+	}
+	// TODO: handler errors
 	return
 }
 

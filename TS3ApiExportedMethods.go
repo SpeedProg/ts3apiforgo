@@ -97,8 +97,9 @@ func (api TS3Api) SelectVirtualServer(serverid int) {
 // Get informations about your self, like your id.
 func (api TS3Api) WhoAmI() (client *Me) {
 	cmd := "whoami"
-	answer := api.doCommand(cmd)
-	arr := strings.Split(answer, " ")
+	answers, _ := api.doCommand(cmd)
+	// TODO: error handling
+	arr := strings.Split(answers.Front().Value.(string), " ")
 	client = &Me{}
 	for index, element := range arr {
 		prop := strings.SplitN(element, "=", 2)
@@ -112,7 +113,6 @@ func (api TS3Api) WhoAmI() (client *Me) {
 			}
 		}
 	}
-	api.readLine()
 	return
 }
 
