@@ -230,3 +230,85 @@ func (api TS3Api) Hostinfo() (info *HostInfo, err error) {
 	}
 	return
 }
+
+type InstanceInfo struct {
+	DBVersion             uint
+	FtPort                uint
+	MaxDlBandwidth        uint64
+	MaxUpTotalBandwidth   uint64
+	GuestServerQueryGroup uint
+	QueryFloodCommands    uint
+	QueryFloodTime        uint
+	QueryBanTime          uint
+	TmplSvrAdminGroup     uint
+	TmplSvrDefaultGroup   uint
+	TmplChAdminGroup      uint
+	TmplChDefaultGroup    uint
+	PermVersion           uint
+	PendingConPerIP       uint
+}
+
+func (api TS3Api) Instanceinfo() (info *InstanceInfo, err error) {
+	/*
+		serverinstance_pending_connections_per_ip=0
+	*/
+	info = &InstanceInfo{}
+	answerList, _ := api.doCommand("instanceinfo")
+	// TODO: handle errors
+	answer := answerList.Front().Value.(string)
+	params := strings.Split(answer, " ")
+	for _, param := range params {
+		func(p string) {
+			var ival uint64
+			parts := strings.SplitN(p, "=", 2)
+			switch parts[0] {
+			case "serverinstance_database_version":
+				ival, err = strconv.ParseUint(parts[1], 10, 32)
+				info.DBVersion = uint(ival)
+			case "serverinstance_filetransfer_port":
+				ival, err = strconv.ParseUint(parts[1], 10, 32)
+				info.FtPort = uint(ival)
+			case "serverinstance_max_download_total_bandwidth":
+				ival, err = strconv.ParseUint(parts[1], 10, 32)
+				info.MaxDlBandwidth = ival
+			case "serverinstance_max_upload_total_bandwidth":
+				ival, err = strconv.ParseUint(parts[1], 10, 64)
+				info.MaxUpTotalBandwidth = ival
+			case "serverinstance_guest_serverquery_group":
+				ival, err = strconv.ParseUint(parts[1], 10, 32)
+				info.GuestServerQueryGroup = uint(ival)
+			case "serverinstance_serverquery_flood_commands":
+				ival, err = strconv.ParseUint(parts[1], 10, 32)
+				info.QueryFloodCommands = uint(ival)
+			case "serverinstance_serverquery_flood_time":
+				ival, err = strconv.ParseUint(parts[1], 10, 32)
+				info.QueryFloodTime = uint(ival)
+			case "serverinstance_serverquery_ban_time":
+				ival, err = strconv.ParseUint(parts[1], 10, 32)
+				info.QueryBanTime = uint(ival)
+			case "serverinstance_template_serveradmin_group":
+				ival, err = strconv.ParseUint(parts[1], 10, 32)
+				info.TmplSvrAdminGroup = uint(ival)
+			case "serverinstance_template_serverdefault_group":
+				ival, err = strconv.ParseUint(parts[1], 10, 32)
+				info.TmplSvrDefaultGroup = uint(ival)
+			case "serverinstance_template_channeladmin_group":
+				ival, err = strconv.ParseUint(parts[1], 10, 32)
+				info.TmplChAdminGroup = uint(ival)
+			case "serverinstance_template_channeldefault_group":
+				ival, err = strconv.ParseUint(parts[1], 10, 32)
+				info.TmplChDefaultGroup = uint(ival)
+			case "serverinstance_permissions_version":
+				ival, err = strconv.ParseUint(parts[1], 10, 32)
+				info.PermVersion = uint(ival)
+			case "serverinstance_pending_connections_per_ip":
+				ival, err = strconv.ParseUint(parts[1], 10, 32)
+				info.PendingConPerIP = uint(ival)
+			default:
+				logger.Error("%s=%s is invalid for instanceinfo.", parts[0], parts[1])
+				err = errors.New(parts[0] + "=" + parts[1] + " is invalid for instanceinfo.")
+			}
+		}(param)
+	}
+	return
+}
