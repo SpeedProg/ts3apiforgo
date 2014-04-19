@@ -1,5 +1,12 @@
 package ts3api
 
+// Implemts the
+
+var _ TS3Listener = (*TS3Adapter)(nil)
+
+// Implemts the TS3Listener interface
+// All methods do nothing
+// Can be embedded into own listeners to avoid needing to add all methods
 type TS3Adapter struct {
 }
 
