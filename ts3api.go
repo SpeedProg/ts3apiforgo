@@ -1,10 +1,14 @@
-// ts3api
+// A layer for the TS3Query interface.
+// There is a subpackage speedprog.de/ts3api/ts3const
+// that contains constants to use for setabel properties.
+// TODO: BINDINGLIST, find out how it looks with more then one binding
 package ts3api
 
 import (
 	"code.google.com/p/log4go"
 	"container/list"
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -15,6 +19,11 @@ type TS3Api struct {
 	conn         *ts3Connection
 	lineList     *list.List
 	listenerList *list.List
+}
+
+type QueryError struct {
+	id  int
+	msg string
 }
 
 func init() {
@@ -154,19 +163,35 @@ func (api TS3Api) readLine() (msg string) {
 	return
 }
 
-func (api TS3Api) doCommand(cmd string) (answersList *list.List, err error) {
+func (api TS3Api) doCommand(cmd string) (answersList *list.List, err QueryError) {
 	api.conn.DoCommand(cmd)
 	answersList = list.New()
 	var answer string
 	for {
 		answer = api.readLine()
 		if strings.HasPrefix(answer, "error") {
+			err = parseQueryError(answer)
 			break
 		} else {
 			answersList.PushBack(answer)
 		}
 	}
-	// TODO: handler errors
+	return
+}
+
+func parseQueryError(s string) (err QueryError) {
+	var props []string = strings.Split(s, " ")
+	for _, prop := range props {
+		if strings.Contains(prop, "=") {
+			var kvPair []string = strings.Split(prop, "=")
+			switch kvPair[0] {
+			case "id":
+				err.id, _ = strconv.Atoi(kvPair[1])
+			case "msg":
+				err.msg = decodeValue(kvPair[1])
+			}
+		}
+	}
 	return
 }
 
@@ -175,13 +200,12 @@ func (api TS3Api) initEventFromString(event Event, msg string) {
 	for _, message := range params {
 		if strings.Contains(message, "=") {
 			keyval := strings.SplitN(message, "=", 2)
-			event.setParam(keyval[0], keyval[1])
+			event.setParam(keyval[0], decodeValue(keyval[1]))
 		} else {
 			event.setParam(message, "")
 		}
 	}
 	event.setApi(&api)
-
 }
 
 func (api TS3Api) callListeners(event Event) {
@@ -259,4 +283,35 @@ func getBoolFromString(s string) (bool, error) {
 		return true, nil
 	}
 	return false, errors.New(s + " is not valid!")
+}
+
+func encodeValue(s string) string {
+	s = strings.Replace(s, "\\", "\\\\", -1)
+	s = strings.Replace(s, "/", "\\/", -1)
+	s = strings.Replace(s, " ", "\\s", -1)
+	s = strings.Replace(s, "|", "\\p", -1)
+	s = strings.Replace(s, "\a", "\\a", -1)
+	s = strings.Replace(s, "\b", "\\b", -1)
+	s = strings.Replace(s, "\f", "\\f", -1)
+	s = strings.Replace(s, "\n", "\\n", -1)
+	s = strings.Replace(s, "\r", "\\r", -1)
+	s = strings.Replace(s, "\t", "\\t", -1)
+	s = strings.Replace(s, "\v", "\\v", -1)
+	return s
+}
+
+func decodeValue(s string) string {
+	s = strings.Replace(s, "\\\\", "\\[$]", -1)
+	s = strings.Replace(s, "\\/", "/", -1)
+	s = strings.Replace(s, "\\s", " ", -1)
+	s = strings.Replace(s, "\\p", "|", -1)
+	s = strings.Replace(s, "\\a", "\a", -1)
+	s = strings.Replace(s, "\\b", "\b", -1)
+	s = strings.Replace(s, "\\f", "\f", -1)
+	s = strings.Replace(s, "\\n", "\n", -1)
+	s = strings.Replace(s, "\\r", "\r", -1)
+	s = strings.Replace(s, "\\t", "\t", -1)
+	s = strings.Replace(s, "\\v", "\v", -1)
+	s = strings.Replace(s, "\\[$]", "\\", -1)
+	return s
 }

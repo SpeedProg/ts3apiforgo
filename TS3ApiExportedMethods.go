@@ -83,7 +83,8 @@ func (api TS3Api) SendTextMessage(targetmode int, target int, msg string) (err e
 		err = errors.New("Targetmode out of range musst be > 1 and < 4")
 		return
 	}
-	cmd := "sendtextmessage targetmode=" + strconv.Itoa(targetmode) + " target=" + strconv.Itoa(target) + " msg=" + msg
+	cmd := "sendtextmessage targetmode=" + strconv.Itoa(targetmode) +
+		" target=" + strconv.Itoa(target) + " msg=" + encodeValue(msg)
 	api.doCommand(cmd)
 	return
 }
@@ -103,7 +104,8 @@ func (api TS3Api) WhoAmI() (client *Me) {
 	client = &Me{}
 	for index, element := range arr {
 		prop := strings.SplitN(element, "=", 2)
-		logger.Error("Index=" + strconv.Itoa(index) + " Key=" + prop[0] + " Value=" + prop[1])
+		prop[1] = decodeValue(prop[1])
+		logger.Trace("Index=" + strconv.Itoa(index) + " Key=" + prop[0] + " Value=" + prop[1])
 		if prop[0] == "client_id" {
 			cid, err := strconv.Atoi(prop[1])
 			if err != nil {
@@ -124,7 +126,7 @@ func (api TS3Api) ClientMove(clid int, cid int) {
 
 // Set your own nick.
 func (api TS3Api) SetNick(nick string) {
-	cmd := "clientupdate client_nickname=" + nick
+	cmd := "clientupdate client_nickname=" + encodeValue(nick)
 	api.doCommand(cmd)
 }
 
@@ -135,6 +137,7 @@ func (api TS3Api) Version() (version string, build uint64, platform string) {
 	var err error
 	for i := 0; i < 3; i++ {
 		var tparts []string = strings.SplitN(parts[i], "=", 2)
+		tparts[1] = decodeValue(tparts[1])
 		switch i {
 		case 0:
 			version = tparts[1]
@@ -171,9 +174,9 @@ type HostInfo struct {
 	BandwidthReceivedLastMinute      uint64
 }
 
-func (api TS3Api) Hostinfo() (info *HostInfo, err error) {
+func (api TS3Api) Hostinfo() (info *HostInfo, qerr QueryError, err error) {
 	info = &HostInfo{}
-	answerList, _ := api.doCommand("hostinfo")
+	answerList, qerr := api.doCommand("hostinfo")
 	// TODO: handle errors
 	answer := answerList.Front().Value.(string)
 	params := strings.Split(answer, " ")
@@ -181,6 +184,7 @@ func (api TS3Api) Hostinfo() (info *HostInfo, err error) {
 		func(p string) {
 			var ival uint64
 			parts := strings.SplitN(p, "=", 2)
+			parts[1] = decodeValue(parts[1])
 			switch parts[0] {
 			case "instance_uptime":
 				info.Uptime, err = strconv.ParseUint(parts[1], 10, 64)
@@ -248,12 +252,12 @@ type InstanceInfo struct {
 	PendingConPerIP       uint
 }
 
-func (api TS3Api) Instanceinfo() (info *InstanceInfo, err error) {
+func (api TS3Api) Instanceinfo() (info *InstanceInfo, qerr QueryError, err error) {
 	/*
 		serverinstance_pending_connections_per_ip=0
 	*/
 	info = &InstanceInfo{}
-	answerList, _ := api.doCommand("instanceinfo")
+	answerList, qerr := api.doCommand("instanceinfo")
 	// TODO: handle errors
 	answer := answerList.Front().Value.(string)
 	params := strings.Split(answer, " ")
@@ -261,6 +265,7 @@ func (api TS3Api) Instanceinfo() (info *InstanceInfo, err error) {
 		func(p string) {
 			var ival uint64
 			parts := strings.SplitN(p, "=", 2)
+			parts[1] = decodeValue(parts[1])
 			switch parts[0] {
 			case "serverinstance_database_version":
 				ival, err = strconv.ParseUint(parts[1], 10, 32)
