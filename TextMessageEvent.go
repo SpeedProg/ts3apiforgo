@@ -14,6 +14,13 @@ type TextMessageEvent struct {
 	msg        string
 }
 
+func NewTextMessageEvent() (event *TextMessageEvent) {
+	event = &TextMessageEvent{}
+	event.ApiHolder = &ApiHolder{}
+	event.InvokerHolder = &InvokerHolder{}
+	return
+}
+
 func (event *TextMessageEvent) setParam(key, val string) (err error) {
 	switch key {
 	case "targetmode":

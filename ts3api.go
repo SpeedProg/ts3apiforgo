@@ -32,32 +32,40 @@ func (api TS3Api) reader(ch chan<- bool) {
 		}
 		msg = strings.TrimSpace(msg)
 		logger.Trace("Processing Message: %s", msg)
-		prefixSplits := strings.SplitN(msg, " ", 2)
-		if len(prefixSplits) < 2 {
-			api.lineList.PushBack(msg)
-		} else {
-
-			switch prefixSplits[0] {
-			case "notifytextmessage":
-				api.dispatchTextMessage(prefixSplits[1])
+		msgp := strings.SplitN(msg, " ", 2)
+		if strings.HasPrefix(msgp[0], "notify") {
+			switch msgp[0] {
 			case "notifycliententerview":
-				api.dispatchClientJoinMessage(prefixSplits[1])
-			case "notifyclientmoved":
-				api.dispatchClientMovedMessage(prefixSplits[1])
+				api.dispatchClientJoinMessage(msgp[1])
+			case "notifyclientleftview":
+				api.dispatchClientLeftMessage(msgp[1])
 			case "notifyserveredited":
-				api.dispatchServerEditedMessage(prefixSplits[1])
+				api.dispatchServerEditedMessage(msgp[1])
+			case "notifychanneldescriptionchanged":
+				api.dispatchChDescChangedMessage(msgp[1])
+			case "notifychannelpasswordchanged":
+				api.dispatchChannelPasswordChangedMessage(msgp[1])
+			case "notifychannelmoved":
+				api.dispatchChannelMovedMessage(msgp[1])
+			case "notifychanneledited":
+				api.dispatchChannelEditedMessage(msgp[1])
+			case "notifychannelcreated":
+				api.dispatchChannelCreatedMessage(msgp[1])
+			case "notifychanneldeleted":
+				api.dispatchChannelDeleted(msgp[1])
+			case "notifyclientmoved":
+				api.dispatchClientMovedMessage(msgp[1])
+			case "notifytextmessage":
+				api.dispatchTextMessage(msgp[1])
+			case "notifytokenused":
+				api.dispatchTokenUsedMesage(msgp[1])
 			default:
-				logger.Error("Add To lineList")
-				api.lineList.PushBack(msg)
-			}
-		}
-		/*
-			Read: notifyclientleftview cfid=4 ctid=0 reasonid=3 reasonmsg=connection\slost clid=16
-			Read:
-			Read: notifyclientleftview cfid=1 ctid=0 reasonid=8 reasonmsg=deselected\svirtualserver clid=18
-			Read: notifycliententerview cfid=0 ctid=1 reasonid=0 clid=19 client_unique_identifier=a8DECwLONmPE4kNW0W2C3xDiRIA= client_nickname=Manfred\sfrom\s192.168.0.1:57329 client_input_muted=0 client_output_muted=0 client_outputonly_muted=0 client_input_hardware=0 client_output_hardware=0 client_meta_data client_is_recording=0 client_database_id=4 client_channel_group_id=8 client_servergroups=6,11 client_away=0 client_away_message client_type=1 client_flag_avatar=84ce0342c818723a75c51af66a723d2d client_talk_power=99 client_talk_request=0 client_talk_request_msg client_description=BETTER\sTHAN\sYUOF client_is_talker=0 client_is_priority_speaker=0 client_unread_messages=0 client_nickname_phonetic client_needed_serverquery_view_power=75 client_icon_id=0 client_is_channel_commander=0 client_country client_channel_group_inherited_channel_id=1 client_badges
 
-		*/
+			}
+		} else {
+			logger.Trace("Added Line: %s", msg)
+			api.lineList.PushBack(msg)
+		}
 
 	}
 	ch <- true
@@ -106,7 +114,7 @@ func (api TS3Api) dispatchChDescChangedMessage(msg string) {
 }
 
 func (api TS3Api) dispatchClientJoinMessage(msg string) {
-	event := NewClientJoinEvent()
+	event := NewClientJoinedEvent()
 	api.initEventFromString(event, msg)
 	api.callListeners(event)
 }
@@ -118,7 +126,19 @@ func (api TS3Api) dispatchClientLeftMessage(msg string) {
 }
 
 func (api TS3Api) dispatchTextMessage(msg string) {
-	event := &TextMessageEvent{}
+	event := NewTextMessageEvent()
+	api.initEventFromString(event, msg)
+	api.callListeners(event)
+}
+
+func (api TS3Api) dispatchTokenUsedMesage(msg string) {
+	event := NewTokenUsedEvent()
+	api.initEventFromString(event, msg)
+	api.callListeners(event)
+}
+
+func (api TS3Api) dispatchChannelDeleted(msg string) {
+	event := NewChannelDeletedEvent()
 	api.initEventFromString(event, msg)
 	api.callListeners(event)
 }
@@ -181,10 +201,10 @@ func (api TS3Api) callListeners(event Event) {
 			listener := element.Value.(TS3Listener)
 			go listener.ChannelPasswordChanged(event.(*ChannelPasswordChangedEvent))
 		}
-	case *ClientJoinEvent:
+	case *ClientJoinedEvent:
 		for element := api.listenerList.Front(); element != nil; element = element.Next() {
 			listener := element.Value.(TS3Listener)
-			go listener.ClientJoined(event.(*ClientJoinEvent))
+			go listener.ClientJoined(event.(*ClientJoinedEvent))
 		}
 	case *ClientLeftEvent:
 		for element := api.listenerList.Front(); element != nil; element = element.Next() {

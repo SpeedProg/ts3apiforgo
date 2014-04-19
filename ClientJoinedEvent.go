@@ -6,9 +6,9 @@ import (
 	"strings"
 )
 
-var _ Event = (*ClientJoinEvent)(nil)
+var _ Event = (*ClientJoinedEvent)(nil)
 
-type ClientJoinEvent struct {
+type ClientJoinedEvent struct {
 	*ApiHolder
 	clMetaData                   string // client_meta_data
 	chFromId                     int
@@ -46,13 +46,13 @@ type ClientJoinEvent struct {
 	clId                         int
 }
 
-func NewClientJoinEvent() (event *ClientJoinEvent) {
-	event = &ClientJoinEvent{}
+func NewClientJoinedEvent() (event *ClientJoinedEvent) {
+	event = &ClientJoinedEvent{}
 	event.ApiHolder = &ApiHolder{}
 	return event
 }
 
-func (event *ClientJoinEvent) setParam(key string, val string) (err error) {
+func (event *ClientJoinedEvent) setParam(key string, val string) (err error) {
 	switch key {
 	case "clid":
 		event.clId, err = strconv.Atoi(val)
@@ -191,136 +191,136 @@ func (event *ClientJoinEvent) setParam(key string, val string) (err error) {
 	return
 }
 
-func (event *ClientJoinEvent) Id() int {
+func (event *ClientJoinedEvent) Id() int {
 	return event.clId
 }
 
-func (event *ClientJoinEvent) ChannelFromId() int {
+func (event *ClientJoinedEvent) ChannelFromId() int {
 	return event.chFromId
 }
 
-func (event *ClientJoinEvent) ChannelToId() int {
+func (event *ClientJoinedEvent) ChannelToId() int {
 	return event.chToId
 }
 
-func (event *ClientJoinEvent) ReasonId() int {
+func (event *ClientJoinedEvent) ReasonId() int {
 	return event.reasonId
 }
 
-func (event *ClientJoinEvent) UID() string {
+func (event *ClientJoinedEvent) UID() string {
 	return event.clUID
 }
 
-func (event *ClientJoinEvent) Nick() string {
+func (event *ClientJoinedEvent) Nick() string {
 	return event.clNick
 }
 
-func (event *ClientJoinEvent) InputMuted() bool {
+func (event *ClientJoinedEvent) InputMuted() bool {
 	return event.clInputMuted
 }
 
-func (event *ClientJoinEvent) OutputMuted() bool {
+func (event *ClientJoinedEvent) OutputMuted() bool {
 	return event.clOutputMuted
 }
 
-func (event *ClientJoinEvent) InputHardware() int {
+func (event *ClientJoinedEvent) InputHardware() int {
 	return event.clInputHW
 }
 
-func (event *ClientJoinEvent) OutputHardware() int {
+func (event *ClientJoinedEvent) OutputHardware() int {
 	return event.clOutputHW
 }
 
-func (event *ClientJoinEvent) OutputOnlyMuted() bool {
+func (event *ClientJoinedEvent) OutputOnlyMuted() bool {
 	return event.clOutputOnlyMuted
 }
 
-func (event *ClientJoinEvent) IsRecording() bool {
+func (event *ClientJoinedEvent) IsRecording() bool {
 	return event.clIsRecording
 }
 
-func (event *ClientJoinEvent) DatabaseId() int {
+func (event *ClientJoinedEvent) DatabaseId() int {
 	return event.clDbId
 }
 
-func (event *ClientJoinEvent) ChannelGroupId() int {
+func (event *ClientJoinedEvent) ChannelGroupId() int {
 	return event.clChGroupId
 }
 
-func (event *ClientJoinEvent) ServerGroups() []int {
+func (event *ClientJoinedEvent) ServerGroups() []int {
 	return event.clServerGroups
 }
 
-func (event *ClientJoinEvent) Away() bool {
+func (event *ClientJoinedEvent) Away() bool {
 	return event.clAway
 }
 
-func (event *ClientJoinEvent) AwayMsg() string {
+func (event *ClientJoinedEvent) AwayMsg() string {
 	return event.clAwayMsg
 }
 
 // 0 = Voice
 // 1 = Query
-func (event *ClientJoinEvent) Type() int {
+func (event *ClientJoinedEvent) Type() int {
 	return event.clType
 }
 
-func (event *ClientJoinEvent) FlagAvatar() string {
+func (event *ClientJoinedEvent) FlagAvatar() string {
 	return event.clFlagAvatar
 }
 
-func (event *ClientJoinEvent) TalkPower() int {
+func (event *ClientJoinedEvent) TalkPower() int {
 	return event.clTalkPwr
 }
 
-func (event *ClientJoinEvent) TalkRequested() bool {
+func (event *ClientJoinedEvent) TalkRequested() bool {
 	return event.clTalkReq
 }
 
-func (event *ClientJoinEvent) TalkRequestMsg() string {
+func (event *ClientJoinedEvent) TalkRequestMsg() string {
 	return event.clTalkReqMsg
 }
 
-func (event *ClientJoinEvent) Description() string {
+func (event *ClientJoinedEvent) Description() string {
 	return event.clDesc
 }
 
-func (event *ClientJoinEvent) IsTalker() bool {
+func (event *ClientJoinedEvent) IsTalker() bool {
 	return event.clIsTalker
 }
 
-func (event *ClientJoinEvent) IsPrioritySpeaker() bool {
+func (event *ClientJoinedEvent) IsPrioritySpeaker() bool {
 	return event.clIsPrioSpeaker
 }
 
-func (event *ClientJoinEvent) UnreadMsgs() int {
+func (event *ClientJoinedEvent) UnreadMsgs() int {
 	return event.clUnreadMsgs
 }
 
-func (event *ClientJoinEvent) NickPhonetic() string {
+func (event *ClientJoinedEvent) NickPhonetic() string {
 	return event.clNickPhonetic
 }
 
-func (event *ClientJoinEvent) NeededServerqueryViewPower() int {
+func (event *ClientJoinedEvent) NeededServerqueryViewPower() int {
 	return event.clNeededServerqueryViewPower
 }
 
-func (event *ClientJoinEvent) IconId() int {
+func (event *ClientJoinedEvent) IconId() int {
 	return event.clIconId
 }
 
-func (event *ClientJoinEvent) IsChannelCommander() bool {
+func (event *ClientJoinedEvent) IsChannelCommander() bool {
 	return event.clIsChCommander
 }
 
-func (event *ClientJoinEvent) Country() string {
+func (event *ClientJoinedEvent) Country() string {
 	return event.clCountry
 }
 
-func (event *ClientJoinEvent) ChannelGroupInheritedChannelId() int {
+func (event *ClientJoinedEvent) ChannelGroupInheritedChannelId() int {
 	return event.clChGroupInheritedChanId
 }
 
-func (event *ClientJoinEvent) Badages() string {
+func (event *ClientJoinedEvent) Badages() string {
 	return event.clBadages
 }
