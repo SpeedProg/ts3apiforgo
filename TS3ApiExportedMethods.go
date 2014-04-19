@@ -150,3 +150,83 @@ func (api TS3Api) Version() (version string, build uint64, platform string) {
 	return
 }
 
+type HostInfo struct {
+	Uptime                           uint64
+	TimestampUTC                     uint64
+	VirtualserverCount               uint
+	VirtualserverTotalMaxClients     uint
+	VirtualserverTotalClientsOnline  uint
+	VirtualserverTotalChannelsOnline uint
+	FiletransferBandwidthSent        uint64
+	FiletransferBandwidthReceived    uint64
+	FiletransferBytesSentTotal       uint64
+	FiletransferBytesReceivedTotal   uint64
+	PacketsSentTotal                 uint64
+	BytesSentTotal                   uint64
+	PacketsReceivedTotal             uint64
+	BytesReceivedTotal               uint64
+	BandwidthSendLastSecond          uint64
+	BandwidthSendLastMinute          uint64
+	BandwidthReceivedLastSecond      uint64
+	BandwidthReceivedLastMinute      uint64
+}
+
+func (api TS3Api) Hostinfo() (info *HostInfo, err error) {
+	info = &HostInfo{}
+	answerList, _ := api.doCommand("hostinfo")
+	// TODO: handle errors
+	answer := answerList.Front().Value.(string)
+	params := strings.Split(answer, " ")
+	for _, param := range params {
+		func(p string) {
+			var ival uint64
+			parts := strings.SplitN(p, "=", 2)
+			switch parts[0] {
+			case "instance_uptime":
+				info.Uptime, err = strconv.ParseUint(parts[1], 10, 64)
+			case "host_timestamp_utc":
+				info.TimestampUTC, err = strconv.ParseUint(parts[1], 10, 64)
+			case "virtualservers_running_total":
+				ival, err = strconv.ParseUint(parts[1], 10, 32)
+				info.VirtualserverCount = uint(ival)
+			case "virtualservers_total_maxclients":
+				ival, err = strconv.ParseUint(parts[1], 10, 32)
+				info.VirtualserverTotalMaxClients = uint(ival)
+			case "virtualservers_total_clients_online":
+				ival, err = strconv.ParseUint(parts[1], 10, 32)
+				info.VirtualserverTotalClientsOnline = uint(ival)
+			case "virtualservers_total_channels_online":
+				ival, err = strconv.ParseUint(parts[1], 10, 32)
+				info.VirtualserverTotalChannelsOnline = uint(ival)
+			case "connection_filetransfer_bandwidth_sent":
+				info.FiletransferBandwidthSent, err = strconv.ParseUint(parts[1], 10, 64)
+			case "connection_filetransfer_bandwidth_received":
+				info.FiletransferBandwidthReceived, err = strconv.ParseUint(parts[1], 10, 64)
+			case "connection_filetransfer_bytes_sent_total":
+				info.FiletransferBytesSentTotal, err = strconv.ParseUint(parts[1], 10, 64)
+			case "connection_filetransfer_bytes_received_total":
+				info.FiletransferBytesReceivedTotal, err = strconv.ParseUint(parts[1], 10, 64)
+			case "connection_packets_received_total":
+				info.PacketsReceivedTotal, err = strconv.ParseUint(parts[1], 10, 64)
+			case "connection_packets_sent_total":
+				info.PacketsSentTotal, err = strconv.ParseUint(parts[1], 10, 64)
+			case "connection_bytes_sent_total":
+				info.BytesSentTotal, err = strconv.ParseUint(parts[1], 10, 64)
+			case "connection_bytes_received_total":
+				info.BytesReceivedTotal, err = strconv.ParseUint(parts[1], 10, 64)
+			case "connection_bandwidth_sent_last_second_total":
+				info.BandwidthSendLastSecond, err = strconv.ParseUint(parts[1], 10, 64)
+			case "connection_bandwidth_sent_last_minute_total":
+				info.BandwidthSendLastMinute, err = strconv.ParseUint(parts[1], 10, 64)
+			case "connection_bandwidth_received_last_second_total":
+				info.BandwidthReceivedLastSecond, err = strconv.ParseUint(parts[1], 10, 64)
+			case "connection_bandwidth_received_last_minute_total":
+				info.BandwidthReceivedLastMinute, err = strconv.ParseUint(parts[1], 10, 64)
+			default:
+				logger.Error("%s=%s is invalid for hostinfo.", parts[0], parts[1])
+				err = errors.New(parts[0] + "=" + parts[1] + " is invalid for hostinfo.")
+			}
+		}(param)
+	}
+	return
+}
