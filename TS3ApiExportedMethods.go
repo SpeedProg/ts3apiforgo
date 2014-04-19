@@ -317,3 +317,32 @@ func (api TS3Api) Instanceinfo() (info *InstanceInfo, qerr QueryError, err error
 	}
 	return
 }
+
+// Takes an array of 2 dimensinal arrays representing Serverinstance properties
+// that are editable and the value to set.
+// Valid Properties are found as constants starting with SERVERINSTANCE_ in ts3const.
+func (api TS3Api) Instanceedit(properties [][]string) (qerr QueryError) {
+	cmd := "instanceedit"
+	props := ""
+	for _, pel := range properties {
+		props += " " + strings.ToLower(pel[0]) + "=" + encodeValue(pel[1])
+	}
+	cmd += props
+	_, qerr = api.doCommand(cmd)
+	return
+}
+
+type ServerListEntry struct {
+	VSId        int
+	VSPort      int
+	VSStatus    string
+	VSClOnline  int
+	VSQClOnline int
+	VSMaxCl     int
+	VSUTime     int64
+	VSName      string
+	VSAutostrt  bool
+	VSMachinId  int
+	VSUID       string
+}
+
