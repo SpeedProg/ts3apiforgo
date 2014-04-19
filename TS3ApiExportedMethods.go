@@ -49,6 +49,7 @@ func (api TS3Api) Quit() {
 
 // id is ignored for every event except channel
 // id = 0 for channel, stands for all channels
+// Events are: tokenused, textserver, textchannel, textprivate, channel, server
 func (api TS3Api) RegisterEvent(event string, id int) {
 	cmd := "servernotifyregister event=" + event
 	if event == "channel" {
