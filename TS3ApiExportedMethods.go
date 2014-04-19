@@ -8,8 +8,12 @@ import (
 	"strings"
 )
 
-func New(network, addr string) (api *TS3Api, err error) {
-	ts3conn, err := newConnection(network, addr)
+// New creates a TS3Api, connecting to the given address.
+// addr should looke like 127.0.0.1:10011.
+// Starts the TS3 Query connection in an other routine.
+// To wait for its ending you can use the given channel.
+func New(addr string, ch chan<- bool) (api *TS3Api, err error) {
+	ts3conn, err := newConnection("tcp", addr)
 	if err != nil {
 		return
 	}
@@ -18,29 +22,33 @@ func New(network, addr string) (api *TS3Api, err error) {
 		lineList:     list.New(),
 		listenerList: list.New(),
 	}
-	return
-}
-
-func (api TS3Api) Run(ch chan<- bool) {
 	api.conn.ReadLine()
 	api.conn.ReadLine()
 	go api.reader(ch)
+	return
 }
 
+// Register a TS3Listener.
 func (api TS3Api) RegisterTS3Listener(listener TS3Listener) {
 	api.listenerList.PushBack(listener)
 }
 
+// Login as user with password.
 func (api TS3Api) Login(user, password string) {
 	cmd := "login " + user + " " + password
 	api.doCommand(cmd)
 }
 
+// Logout.
+// Logging out does not end the connection, you can login again afterwards.
 func (api TS3Api) Logout() {
 	cmd := "logout"
 	api.doCommand(cmd)
 }
 
+// Send quit over the query connection.
+// This causes the ts queryserver to end the connection.
+// After using this you can not use this TS3Api object anymore.
 func (api TS3Api) Quit() {
 	cmd := "quit"
 	api.doCommand(cmd)
@@ -65,11 +73,11 @@ const (
 	MESSAGE_TARGETMODE_SERVER  = 3
 )
 
-/*
-CLIENT = 1 : target is a client
-CHANNEL 2: target is a channel
-SERVER 3: target is a virtual server
-*/
+// Send a textmessage to the given targetmode and target.
+//
+// CLIENT = 1 : target is a client
+// CHANNEL 2: target is a channel
+// SERVER 3: target is a virtual server
 func (api TS3Api) SendTextMessage(targetmode int, target int, msg string) (err error) {
 	if targetmode < 1 || targetmode > 3 {
 		err = errors.New("Targetmode out of range musst be > 1 and < 4")
@@ -80,15 +88,16 @@ func (api TS3Api) SendTextMessage(targetmode int, target int, msg string) (err e
 	return
 }
 
+// Select a virtualserver by id.
 func (api TS3Api) SelectVirtualServer(serverid int) {
 	cmd := "use " + strconv.Itoa(serverid)
 	api.doCommand(cmd)
 }
 
+// Get informations about your self, like your id.
 func (api TS3Api) WhoAmI() (client *Me) {
 	cmd := "whoami"
 	answer := api.doCommand(cmd)
-	//"virtualserver_status=online virtualserver_id=1 virtualserver_unique_identifier=Ee9hKUn3SzddLH\/nzUeQxevRLNo= virtualserver_port=9987 client_id=1 client_channel_id=1 client_nickname=TS3TriviaBot\sfrom\s92.194.104.232:65235 client_database_id=32 client_login_name=TS3ToIRCBridge client_unique_identifier=puCS36nEiC9WiSN2Yvp5dlft7wY= client_origin_server_id=1"
 	arr := strings.Split(answer, " ")
 	client = &Me{}
 	for index, element := range arr {
@@ -107,11 +116,13 @@ func (api TS3Api) WhoAmI() (client *Me) {
 	return
 }
 
+// Move client with id clid to channel with id cid.
 func (api TS3Api) ClientMove(clid int, cid int) {
 	cmd := "clientmove clid=" + strconv.Itoa(clid) + " cid=" + strconv.Itoa(cid)
 	api.doCommand(cmd)
 }
 
+// Set your own nick.
 func (api TS3Api) SetNick(nick string) {
 	cmd := "clientupdate client_nickname=" + nick
 	api.doCommand(cmd)
