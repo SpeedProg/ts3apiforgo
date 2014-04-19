@@ -11,6 +11,7 @@ type TextMessageEvent struct {
 	*ApiHolder
 	*InvokerHolder
 	targetmode int
+	target     int
 	msg        string
 }
 
@@ -27,6 +28,8 @@ func (event *TextMessageEvent) setParam(key, val string) (err error) {
 		event.targetmode, err = strconv.Atoi(val)
 	case "msg":
 		event.msg = val
+	case "target":
+		event.target, err = strconv.Atoi(val)
 	default:
 		err = event.InvokerHolder.setParam(key, val)
 	}
@@ -39,4 +42,8 @@ func (event *TextMessageEvent) Msg() string {
 
 func (event *TextMessageEvent) Targetmode() int {
 	return event.targetmode
+}
+
+func (event *TextMessageEvent) Target() int {
+	return event.target
 }
