@@ -2,7 +2,6 @@
 package ts3api
 
 import (
-	"errors"
 	"strconv"
 )
 
@@ -27,10 +26,6 @@ func (event *ChannelEditedEvent) setParam(key, val string) (err error) {
 		event.chId, err = strconv.Atoi(val)
 	} else {
 		err = event.InvokerHolder.setParam(key, val)
-		if err != nil {
-			logger.Error(key + "=" + val + " not valid!")
-			err = errors.New(key + "=" + val + " not valid!")
-		}
 	}
 	return
 }

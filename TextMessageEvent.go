@@ -2,7 +2,6 @@
 package ts3api
 
 import (
-	"errors"
 	"strconv"
 )
 
@@ -23,10 +22,6 @@ func (event *TextMessageEvent) setParam(key, val string) (err error) {
 		event.msg = val
 	default:
 		err = event.InvokerHolder.setParam(key, val)
-		if err != nil {
-			logger.Error(key + "=" + val + " not valid!")
-			err = errors.New(key + "=" + val + " not valid!")
-		}
 	}
 	return
 }

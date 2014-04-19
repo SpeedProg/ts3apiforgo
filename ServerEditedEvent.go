@@ -2,7 +2,6 @@
 package ts3api
 
 import (
-	"errors"
 	"strconv"
 )
 
@@ -37,10 +36,6 @@ func (event *ServerEditedEvent) setParam(key string, val string) (err error) {
 			event.values += key + "=" + val
 		} else {
 			err = event.InvokerHolder.setParam(key, val)
-			if err != nil {
-				logger.Error(key + "=" + val + " not valid!")
-				err = errors.New(key + "=" + val + " not valid!")
-			}
 
 		}
 	}
