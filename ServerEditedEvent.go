@@ -2,19 +2,25 @@
 package ts3api
 
 import (
+	"errors"
 	"strconv"
 )
 
+var _ Event = (*ServerEditedEvent)(nil)
+
 type ServerEditedEvent struct {
-	reasonId    int
-	invokerId   int
-	invokerName string
-	invokerUID  string
-	values      string
-	api         *TS3Api
+	*InvokerHolder
+	*ApiHolder
+	reasonId int
+	values   string
 }
 
-var _ Event = (*ServerEditedEvent)(nil)
+func NewServerEditedEvent() (event *ServerEditedEvent) {
+	event = &ServerEditedEvent{}
+	event.InvokerHolder = &InvokerHolder{}
+	event.ApiHolder = &ApiHolder{}
+	return
+}
 
 func (event *ServerEditedEvent) setParam(key string, val string) (err error) {
 	switch key {
@@ -30,7 +36,12 @@ func (event *ServerEditedEvent) setParam(key string, val string) (err error) {
 		if event.isValidValue(key) {
 			event.values += key + "=" + val
 		} else {
-			logger.Fatalln(key + "=" + val + " is not valid!")
+			err = event.InvokerHolder.setParam(key, val)
+			if err != nil {
+				logger.Error(key + "=" + val + " not valid!")
+				err = errors.New(key + "=" + val + " not valid!")
+			}
+
 		}
 	}
 	return
@@ -79,26 +90,6 @@ func (event *ServerEditedEvent) ReasonId() int {
 	return event.reasonId
 }
 
-func (event *ServerEditedEvent) InvokerId() int {
-	return event.invokerId
-}
-
-func (event *ServerEditedEvent) InvokerName() string {
-	return event.invokerName
-}
-
-func (event *ServerEditedEvent) InvokerUID() string {
-	return event.invokerUID
-}
-
 func (event *ServerEditedEvent) Values() string {
 	return event.values
-}
-
-func (event *ServerEditedEvent) Api() *TS3Api {
-	return event.api
-}
-
-func (event *ServerEditedEvent) setApi(api *TS3Api) {
-	event.api = api
 }

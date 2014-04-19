@@ -2,7 +2,6 @@
 package ts3api
 
 import (
-	"errors"
 	"strconv"
 	"strings"
 )
@@ -10,6 +9,7 @@ import (
 var _ Event = (*ClientJoinEvent)(nil)
 
 type ClientJoinEvent struct {
+	*ApiHolder
 	clMetaData                   string // client_meta_data
 	chFromId                     int
 	chToId                       int
@@ -44,7 +44,12 @@ type ClientJoinEvent struct {
 	clChGroupInheritedChanId     int
 	clBadages                    string // key=value... no sure how multiple a seperated
 	clId                         int
-	api                          *TS3Api
+}
+
+func NewClientJoinEvent() (event *ClientJoinEvent) {
+	event = &ClientJoinEvent{}
+	event.ApiHolder = &ApiHolder{}
+	return event
 }
 
 func (event *ClientJoinEvent) setParam(key string, val string) (err error) {
@@ -67,7 +72,7 @@ func (event *ClientJoinEvent) setParam(key string, val string) (err error) {
 		} else if val == "1" {
 			event.clInputMuted = true
 		} else {
-			logger.Panicln("client_input_muted was: " + val)
+			logger.Error("client_input_muted was: " + val)
 			event.clInputMuted = false
 		}
 	case "client_output_muted":
@@ -76,7 +81,7 @@ func (event *ClientJoinEvent) setParam(key string, val string) (err error) {
 		} else if val == "1" {
 			event.clOutputMuted = true
 		} else {
-			logger.Panicln("client_output_muted was: " + val)
+			logger.Error("client_output_muted was: " + val)
 			event.clOutputMuted = false
 		}
 	case "client_outputonly_muted":
@@ -85,7 +90,7 @@ func (event *ClientJoinEvent) setParam(key string, val string) (err error) {
 		} else if val == "1" {
 			event.clOutputOnlyMuted = true
 		} else {
-			logger.Panicln("client_outputonly_muted was: " + val)
+			logger.Error("client_outputonly_muted was: " + val)
 			event.clOutputOnlyMuted = false
 		}
 	case "client_input_hardware":
@@ -100,7 +105,7 @@ func (event *ClientJoinEvent) setParam(key string, val string) (err error) {
 		} else if val == "1" {
 			event.clIsRecording = true
 		} else {
-			logger.Panicln("client_is_recording was: " + val)
+			logger.Error("client_is_recording was: " + val)
 			event.clIsRecording = false
 		}
 	case "client_database_id":
@@ -119,7 +124,7 @@ func (event *ClientJoinEvent) setParam(key string, val string) (err error) {
 		} else if val == "1" {
 			event.clAway = true
 		} else {
-			logger.Panicln("client_away was: " + val)
+			logger.Error("client_away was: " + val)
 			event.clAway = false
 		}
 	case "client_away_message":
@@ -131,9 +136,9 @@ func (event *ClientJoinEvent) setParam(key string, val string) (err error) {
 	case "client_talk_power":
 		event.clTalkPwr, err = strconv.Atoi(val)
 	case "client_talk_request":
-		valb, err := event.getBoolFromString(val)
+		valb, err := getBoolFromString(val)
 		if err != nil {
-			logger.Panicln("client_talk_request was: " + val)
+			logger.Error("client_talk_request was: " + val)
 			event.clTalkReq = false
 		} else {
 			event.clTalkReq = valb
@@ -143,17 +148,17 @@ func (event *ClientJoinEvent) setParam(key string, val string) (err error) {
 	case "client_description":
 		event.clDesc = val
 	case "client_is_talker":
-		valb, err := event.getBoolFromString(val)
+		valb, err := getBoolFromString(val)
 		if err != nil {
-			logger.Panicln("client_is_talker was: " + val)
+			logger.Error("client_is_talker was: " + val)
 			event.clIsTalker = false
 		} else {
 			event.clIsTalker = valb
 		}
 	case "client_is_priority_speaker":
-		valb, err := event.getBoolFromString(val)
+		valb, err := getBoolFromString(val)
 		if err != nil {
-			logger.Panicln("client_is_priority_speaker was: " + val)
+			logger.Error("client_is_priority_speaker was: " + val)
 			event.clIsPrioSpeaker = false
 		} else {
 			event.clIsPrioSpeaker = valb
@@ -165,9 +170,9 @@ func (event *ClientJoinEvent) setParam(key string, val string) (err error) {
 	case "client_icon_id":
 		event.clIconId, err = strconv.Atoi(val)
 	case "client_is_channel_commander":
-		valb, err := event.getBoolFromString(val)
+		valb, err := getBoolFromString(val)
 		if err != nil {
-			logger.Panicln("client_is_channel_commander was: " + val)
+			logger.Error("client_is_channel_commander was: " + val)
 			event.clIsChCommander = false
 		} else {
 			event.clIsChCommander = valb
@@ -181,23 +186,9 @@ func (event *ClientJoinEvent) setParam(key string, val string) (err error) {
 	case "client_unread_messages":
 		event.clUnreadMsgs, err = strconv.Atoi(val)
 	default:
-		logger.Fatalln("Key: " + key + " Value:" + val + " where not valid!")
+		logger.Error("Key: " + key + " Value:" + val + " where not valid!")
 	}
 	return
-}
-
-/*
-Maps 0 to false and 1 to true
-Everything else trurns false and sets error
-*/
-func (event *ClientJoinEvent) getBoolFromString(s string) (bool, error) {
-	if s == "0" {
-		return false, nil
-	}
-	if s == "1" {
-		return true, nil
-	}
-	return false, errors.New(s + " is not valid!")
 }
 
 func (event *ClientJoinEvent) Id() int {
@@ -332,12 +323,4 @@ func (event *ClientJoinEvent) ChannelGroupInheritedChannelId() int {
 
 func (event *ClientJoinEvent) Badages() string {
 	return event.clBadages
-}
-
-func (event *ClientJoinEvent) Api() *TS3Api {
-	return event.api
-}
-
-func (event *ClientJoinEvent) setApi(api *TS3Api) {
-	event.api = api
 }

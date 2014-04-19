@@ -48,6 +48,7 @@ func (api TS3Api) Quit() {
 }
 
 // id is ignored for every event except channel
+// id = 0 for channel, stands for all channels
 func (api TS3Api) RegisterEvent(event string, id int) {
 	cmd := "servernotifyregister event=" + event
 	if event == "channel" {
@@ -91,11 +92,11 @@ func (api TS3Api) WhoAmI() (client *Me) {
 	client = &Me{}
 	for index, element := range arr {
 		prop := strings.SplitN(element, "=", 2)
-		logger.Println("Index=" + strconv.Itoa(index) + " Key=" + prop[0] + " Value=" + prop[1])
+		logger.Error("Index=" + strconv.Itoa(index) + " Key=" + prop[0] + " Value=" + prop[1])
 		if prop[0] == "client_id" {
 			cid, err := strconv.Atoi(prop[1])
 			if err != nil {
-				logger.Fatalln(err.Error())
+				logger.Error(err.Error())
 			} else {
 				client.cId = cid
 			}

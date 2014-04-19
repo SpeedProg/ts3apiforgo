@@ -33,7 +33,7 @@ func (conn ts3Connection) Close() {
 	conn.textprotoConn.Close()
 }
 func (conn ts3Connection) DoCommand(cmd string) {
-	logger.Println(cmd)
+	logger.Trace(cmd)
 	conn.textprotoConn.W.WriteString(cmd + "\n")
 	conn.textprotoConn.W.Flush()
 	return

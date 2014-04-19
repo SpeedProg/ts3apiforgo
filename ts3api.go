@@ -2,15 +2,14 @@
 package ts3api
 
 import (
+	"code.google.com/p/log4go"
 	"container/list"
-	"log"
-	"os"
-	"strconv"
+	"errors"
 	"strings"
 	"time"
 )
 
-var logger *log.Logger = log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lshortfile)
+var logger log4go.Logger
 
 type TS3Api struct {
 	conn         *ts3Connection
@@ -18,20 +17,26 @@ type TS3Api struct {
 	listenerList *list.List
 }
 
+func init() {
+	logger = log4go.NewLogger()
+	logger.LoadConfiguration("log4go.xml")
+}
+
 func (api TS3Api) reader(ch chan<- bool) {
 	for {
-		logger.Println("Waiting for line...")
+		logger.Error("Waiting for line...")
 		msg, err := api.conn.ReadString('\n')
 		if err != nil {
-			logger.Fatalln(err.Error())
+			logger.Error(err.Error())
 			break
 		}
 		msg = strings.TrimSpace(msg)
-		logger.Println(msg)
+		logger.Trace("Processing Message: %s", msg)
 		prefixSplits := strings.SplitN(msg, " ", 2)
 		if len(prefixSplits) < 2 {
 			api.lineList.PushBack(msg)
 		} else {
+
 			switch prefixSplits[0] {
 			case "notifytextmessage":
 				api.dispatchTextMessage(prefixSplits[1])
@@ -42,7 +47,7 @@ func (api TS3Api) reader(ch chan<- bool) {
 			case "notifyserveredited":
 				api.dispatchServerEditedMessage(prefixSplits[1])
 			default:
-				logger.Println("Add To lineList")
+				logger.Error("Add To lineList")
 				api.lineList.PushBack(msg)
 			}
 		}
@@ -58,66 +63,64 @@ func (api TS3Api) reader(ch chan<- bool) {
 	ch <- true
 }
 
-func (api TS3Api) dispatchServerEditedMessage(msg string) {
-	event := &ServerEditedEvent{}
+func (api TS3Api) dispatchChannelPasswordChangedMessage(msg string) {
+	event := NewChannelPasswordChangedEvent()
 	api.initEventFromString(event, msg)
-	for element := api.listenerList.Front(); element != nil; element = element.Next() {
-		listener := element.Value.(TS3Listener)
-		go listener.ServerEdited(event)
-	}
+	api.callListeners(event)
+}
+
+func (api TS3Api) dispatchChannelMovedMessage(msg string) {
+	event := NewChannelMovedEvent()
+	api.initEventFromString(event, msg)
+	api.callListeners(event)
+}
+
+func (api TS3Api) dispatchChannelEditedMessage(msg string) {
+	event := NewChannelEditedEvent()
+	api.initEventFromString(event, msg)
+	api.callListeners(event)
+}
+
+func (api TS3Api) dispatchChannelCreatedMessage(msg string) {
+	event := NewChannelCreatedEvent()
+	api.initEventFromString(event, msg)
+	api.callListeners(event)
+}
+
+func (api TS3Api) dispatchServerEditedMessage(msg string) {
+	event := NewServerEditedEvent()
+	api.initEventFromString(event, msg)
+	api.callListeners(event)
 }
 
 func (api TS3Api) dispatchClientMovedMessage(msg string) {
-	clientMoved := &ClientMovedEvent{}
-	api.initEventFromString(clientMoved, msg)
-	for element := api.listenerList.Front(); element != nil; element = element.Next() {
-		listener := element.Value.(TS3Listener)
-		go listener.ClientMoved(clientMoved)
-	}
+	event := NewClientMovedEvent()
+	api.initEventFromString(event, msg)
+	api.callListeners(event)
+}
+
+func (api TS3Api) dispatchChDescChangedMessage(msg string) {
+	event := NewChannelDescripionChangedEvent()
+	api.initEventFromString(event, msg)
+	api.callListeners(event)
 }
 
 func (api TS3Api) dispatchClientJoinMessage(msg string) {
-	clientJoin := &ClientJoinEvent{}
-	api.initEventFromString(clientJoin, msg)
-	for element := api.listenerList.Front(); element != nil; element = element.Next() {
-		listener := element.Value.(TS3Listener)
-		go listener.ClientJoined(clientJoin)
-	}
+	event := NewClientJoinEvent()
+	api.initEventFromString(event, msg)
+	api.callListeners(event)
 }
 
-func (api TS3Api) dispatchClientLeaveMessage(msg string) {
-	clientLeave := &ClientLeaveEvent{}
-	api.initEventFromString(clientLeave, msg)
-	for element := api.listenerList.Front(); element != nil; element = element.Next() {
-		listener := element.Value.(TS3Listener)
-		go listener.ClientLeft(clientLeave)
-	}
+func (api TS3Api) dispatchClientLeftMessage(msg string) {
+	event := NewClientLeftEvent()
+	api.initEventFromString(event, msg)
+	api.callListeners(event)
 }
 
 func (api TS3Api) dispatchTextMessage(msg string) {
-	textMessageEvent := &TextMessageEvent{}
-	pairs := strings.Split(msg, " ")
-	for index, message := range pairs {
-		keyval := strings.SplitN(message, "=", 2)
-		index += index
-		switch keyval[0] {
-		case "targetmode":
-			textMessageEvent.Targetmode, _ = strconv.Atoi(keyval[1])
-		case "invokerid":
-			textMessageEvent.InvokerId, _ = strconv.Atoi(keyval[1])
-		case "msg":
-			textMessageEvent.Msg = keyval[1]
-		case "invokername":
-			textMessageEvent.InvokerName = keyval[1]
-		case "invokeruid":
-			textMessageEvent.InvokerUid = keyval[1]
-		}
-	}
-	textMessageEvent.Api = &api
-	for element := api.listenerList.Front(); element != nil; element = element.Next() {
-		listener := element.Value.(TS3Listener)
-		go listener.TextMessage(textMessageEvent)
-	}
+	event := &TextMessageEvent{}
+	api.initEventFromString(event, msg)
+	api.callListeners(event)
 }
 
 func (api TS3Api) readLine() (msg string) {
@@ -127,7 +130,7 @@ func (api TS3Api) readLine() (msg string) {
 	element := api.lineList.Front()
 	api.lineList.Remove(element)
 	msg = element.Value.(string)
-	logger.Println("-->" + msg + "<--")
+	logger.Error("-->" + msg + "<--")
 	return
 }
 
@@ -135,60 +138,6 @@ func (api TS3Api) doCommand(cmd string) (answer string) {
 	api.conn.DoCommand(cmd)
 	answer = api.readLine()
 	return
-}
-
-/*
-	Expects the "notifycliententerview " to be allready removed!
-*/
-func (api TS3Api) clientJoinEventFromString(msg string) *ClientJoinEvent {
-	event := ClientJoinEvent{}
-	params := strings.Split(msg, " ")
-	for _, message := range params {
-		if strings.Contains(message, "=") {
-			keyval := strings.SplitN(message, "=", 2)
-			event.setParam(keyval[0], keyval[1])
-		} else {
-			event.setParam(message, "")
-		}
-	}
-	event.api = &api
-	return &event
-}
-
-/*
-	Expects the "notifyclientleftview " to be allready removed!
-*/
-func (api TS3Api) clientLeaveEventFromString(msg string) *ClientLeaveEvent {
-	event := ClientLeaveEvent{}
-	params := strings.Split(msg, " ")
-	for _, message := range params {
-		if strings.Contains(message, "=") {
-			keyval := strings.SplitN(message, "=", 2)
-			event.setParam(keyval[0], keyval[1])
-		} else {
-			event.setParam(message, "")
-		}
-	}
-	event.api = &api
-	return &event
-}
-
-/*
-	Expects the " " to be allready removed!
-*/
-func (api TS3Api) clientMovedEventFromString(msg string) *ClientMovedEvent {
-	event := ClientMovedEvent{}
-	params := strings.Split(msg, " ")
-	for _, message := range params {
-		if strings.Contains(message, "=") {
-			keyval := strings.SplitN(message, "=", 2)
-			event.setParam(keyval[0], keyval[1])
-		} else {
-			event.setParam(message, "")
-		}
-	}
-	event.api = &api
-	return &event
 }
 
 func (api TS3Api) initEventFromString(event Event, msg string) {
@@ -202,4 +151,77 @@ func (api TS3Api) initEventFromString(event Event, msg string) {
 		}
 	}
 	event.setApi(&api)
+
+}
+
+func (api TS3Api) callListeners(event Event) {
+	switch t := event.(type) {
+	case *ChannelCreatedEvent:
+		for element := api.listenerList.Front(); element != nil; element = element.Next() {
+			listener := element.Value.(TS3Listener)
+			go listener.ChannelCreated(event.(*ChannelCreatedEvent))
+		}
+	case *ChannelDescriptionChangedEvent:
+		for element := api.listenerList.Front(); element != nil; element = element.Next() {
+			listener := element.Value.(TS3Listener)
+			go listener.ChannelDescriptionChanged(event.(*ChannelDescriptionChangedEvent))
+		}
+	case *ChannelEditedEvent:
+		for element := api.listenerList.Front(); element != nil; element = element.Next() {
+			listener := element.Value.(TS3Listener)
+			go listener.ChannelEdited(event.(*ChannelEditedEvent))
+		}
+	case *ChannelMovedEvent:
+		for element := api.listenerList.Front(); element != nil; element = element.Next() {
+			listener := element.Value.(TS3Listener)
+			go listener.ChannelMoved(event.(*ChannelMovedEvent))
+		}
+	case *ChannelPasswordChangedEvent:
+		for element := api.listenerList.Front(); element != nil; element = element.Next() {
+			listener := element.Value.(TS3Listener)
+			go listener.ChannelPasswordChanged(event.(*ChannelPasswordChangedEvent))
+		}
+	case *ClientJoinEvent:
+		for element := api.listenerList.Front(); element != nil; element = element.Next() {
+			listener := element.Value.(TS3Listener)
+			go listener.ClientJoined(event.(*ClientJoinEvent))
+		}
+	case *ClientLeftEvent:
+		for element := api.listenerList.Front(); element != nil; element = element.Next() {
+			listener := element.Value.(TS3Listener)
+			go listener.ClientLeft(event.(*ClientLeftEvent))
+		}
+	case *ClientMovedEvent:
+		for element := api.listenerList.Front(); element != nil; element = element.Next() {
+			listener := element.Value.(TS3Listener)
+			go listener.ClientMoved(event.(*ClientMovedEvent))
+		}
+	case *ServerEditedEvent:
+		for element := api.listenerList.Front(); element != nil; element = element.Next() {
+			listener := element.Value.(TS3Listener)
+			go listener.ServerEdited(event.(*ServerEditedEvent))
+		}
+	/*case *TextMessageEvent:
+	for element := api.listenerList.Front(); element != nil; element = element.Next() {
+		listener := element.Value.(TS3Listener)
+		go listener.TextMessage(event.(*TextMessageEvent))
+	}*/
+	default:
+		logger.Error("Event of Type: %s could not be handled.", t)
+	}
+
+}
+
+/*
+Maps 0 to false and 1 to true
+Everything else trurns false and sets error
+*/
+func getBoolFromString(s string) (bool, error) {
+	if s == "0" {
+		return false, nil
+	}
+	if s == "1" {
+		return true, nil
+	}
+	return false, errors.New(s + " is not valid!")
 }
