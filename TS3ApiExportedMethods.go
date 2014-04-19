@@ -58,13 +58,18 @@ func (api TS3Api) Quit() {
 // id is ignored for every event except channel
 // id = 0 for channel, stands for all channels
 // Events are: tokenused, textserver, textchannel, textprivate, channel, server
-func (api TS3Api) RegisterEvent(event string, id int) {
+func (api TS3Api) RegisterEvent(event string, id int) (err error) {
+	if event != "tokenused" && event != "textserver" && event != "textchannel" && event != "textprivate" && event != "channel" && event != "server" {
+		err = errors.New("Event type " + event + " is not valid!")
+		return
+	}
 	cmd := "servernotifyregister event=" + event
 	if event == "channel" {
 		api.doCommand(cmd + " id=" + strconv.Itoa(id))
 	} else {
 		api.doCommand(cmd)
 	}
+	return
 }
 
 const (
