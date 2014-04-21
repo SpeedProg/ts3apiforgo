@@ -34,16 +34,18 @@ func (api TS3Api) RegisterTS3Listener(listener TS3Listener) {
 }
 
 // Login as user with password.
-func (api TS3Api) Login(user, password string) {
+func (api TS3Api) Login(user, password string) (qerr QueryError) {
 	cmd := "login " + user + " " + password
-	api.doCommand(cmd)
+	_, qerr = api.doCommand(cmd)
+	return
 }
 
 // Logout.
 // Logging out does not end the connection, you can login again afterwards.
-func (api TS3Api) Logout() {
+func (api TS3Api) Logout() (qerr QueryError) {
 	cmd := "logout"
-	api.doCommand(cmd)
+	_, qerr = api.doCommand(cmd)
+	return
 }
 
 // Send quit over the query connection.
@@ -58,16 +60,16 @@ func (api TS3Api) Quit() {
 // id is ignored for every event except channel
 // id = 0 for channel, stands for all channels
 // Events are: tokenused, textserver, textchannel, textprivate, channel, server
-func (api TS3Api) RegisterEvent(event string, id int) (err error) {
+func (api TS3Api) RegisterEvent(event string, id int) (err error, qerr QueryError) {
 	if event != "tokenused" && event != "textserver" && event != "textchannel" && event != "textprivate" && event != "channel" && event != "server" {
 		err = errors.New("Event type " + event + " is not valid!")
 		return
 	}
 	cmd := "servernotifyregister event=" + event
 	if event == "channel" {
-		api.doCommand(cmd + " id=" + strconv.Itoa(id))
+		_, qerr = api.doCommand(cmd + " id=" + strconv.Itoa(id))
 	} else {
-		api.doCommand(cmd)
+		_, qerr = api.doCommand(cmd)
 	}
 	return
 }
@@ -83,14 +85,14 @@ const (
 // CLIENT = 1 : target is a client
 // CHANNEL 2: target is a channel
 // SERVER 3: target is a virtual server
-func (api TS3Api) SendTextMessage(targetmode int, target int, msg string) (err error) {
+func (api TS3Api) SendTextMessage(targetmode int, target int, msg string) (err error, qerr QueryError) {
 	if targetmode < 1 || targetmode > 3 {
 		err = errors.New("Targetmode out of range musst be > 1 and < 4")
 		return
 	}
 	cmd := "sendtextmessage targetmode=" + strconv.Itoa(targetmode) +
 		" target=" + strconv.Itoa(target) + " msg=" + encodeValue(msg)
-	api.doCommand(cmd)
+	_, qerr = api.doCommand(cmd)
 	return
 }
 
@@ -101,9 +103,9 @@ func (api TS3Api) SelectVirtualServer(serverid int) {
 }
 
 // Get informations about your self, like your id.
-func (api TS3Api) WhoAmI() (client *Me) {
+func (api TS3Api) WhoAmI() (client *Me, qerr QueryError) {
 	cmd := "whoami"
-	answers, _ := api.doCommand(cmd)
+	answers, qerr := api.doCommand(cmd)
 	// TODO: error handling
 	arr := strings.Split(answers.Front().Value.(string), " ")
 	client = &Me{}
@@ -130,13 +132,14 @@ func (api TS3Api) ClientMove(clid int, cid int) {
 }
 
 // Set your own nick.
-func (api TS3Api) SetNick(nick string) {
+func (api TS3Api) SetNick(nick string) (qerr QueryError) {
 	cmd := "clientupdate client_nickname=" + encodeValue(nick)
-	api.doCommand(cmd)
+	_, qerr = api.doCommand(cmd)
+	return
 }
 
-func (api TS3Api) Version() (version string, build uint64, platform string) {
-	answers, _ := api.doCommand("version")
+func (api TS3Api) Version() (version string, build uint64, platform string, qerr QueryError) {
+	answers, qerr := api.doCommand("version")
 	var answer string = answers.Front().Value.(string)
 	parts := strings.Split(answer, " ")
 	var err error
