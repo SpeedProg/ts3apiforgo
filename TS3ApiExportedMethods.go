@@ -477,3 +477,20 @@ func (api TS3Api) UseByPort(port int, virtual bool) (qerr QueryError) {
 	_, qerr = api.DoCommand(cmd)
 	return
 }
+
+func (api TS3Api) ServerIdGetByPort(port int) (id int, qerr QueryError) {
+	id = -1
+	cmd := "serveridgetbyport virtualserver_port=" + strconv.Itoa(port)
+	alist, qerr := api.DoCommand(cmd)
+	if qerr.Id == 0 {
+		parts := strings.Split(alist.Front().Value.(string), "=")
+		id, _ = strconv.Atoi(parts[1])
+	}
+	return
+}
+
+func (api TS3Api) ServerDelete(port int) (qerr QueryError) {
+	cmd := "serverdelete sid=" + strconv.Itoa(port)
+	_, qerr = api.DoCommand(cmd)
+	return
+}
