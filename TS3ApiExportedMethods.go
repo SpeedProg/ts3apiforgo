@@ -459,3 +459,21 @@ func (api TS3Api) Serverlist(all bool, onlyoffline bool, uid bool) (serverlist l
 	}
 	return
 }
+
+func (api TS3Api) UseById(sid int, virtual bool) (err error, qerr QueryError) {
+	cmd := "use sid=" + strconv.Itoa(sid)
+	if virtual {
+		cmd += " -virtual"
+	}
+	_, qerr = api.DoCommand(cmd)
+	return
+}
+
+func (api TS3Api) UseByPort(port int, virtual bool) (qerr QueryError) {
+	cmd := "use port=" + strconv.Itoa(port)
+	if virtual {
+		cmd += " -virtual"
+	}
+	_, qerr = api.DoCommand(cmd)
+	return
+}
