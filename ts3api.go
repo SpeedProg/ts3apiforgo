@@ -46,7 +46,7 @@ type QueryError struct {
 
 func init() {
 	logger = log4go.NewLogger()
-	logger.LoadConfiguration("log4go.xml")
+	logger.LoadConfiguration("ts3api_log4go.xml")
 }
 
 func (api TS3Api) reader(ch chan<- bool) {
