@@ -40,8 +40,8 @@ type TS3Api struct {
 }
 
 type QueryError struct {
-	id  int
-	msg string
+	Id  int
+	Msg string
 }
 
 func init() {
@@ -188,9 +188,9 @@ func parseQueryError(s string) (err QueryError) {
 			var kvPair []string = strings.Split(prop, "=")
 			switch kvPair[0] {
 			case "id":
-				err.id, _ = strconv.Atoi(kvPair[1])
+				err.Id, _ = strconv.Atoi(kvPair[1])
 			case "msg":
-				err.msg = decodeValue(kvPair[1])
+				err.Msg = decodeValue(kvPair[1])
 			}
 		}
 	}
