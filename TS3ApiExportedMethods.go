@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // New creates a TS3Api, connecting to the given address.
@@ -21,6 +22,7 @@ func New(addr string, ch chan<- bool) (api *TS3Api, err error) {
 		conn:         ts3conn,
 		lineList:     list.New(),
 		listenerList: list.New(),
+		commandMutex: &sync.Mutex{},
 	}
 	api.conn.ReadLine()
 	api.conn.ReadLine()
@@ -33,10 +35,28 @@ func (api TS3Api) RegisterTS3Listener(listener TS3Listener) {
 	api.listenerList.PushBack(listener)
 }
 
+func (api TS3Api) DoCommand(cmd string) (answersList *list.List, err QueryError) {
+	api.commandMutex.Lock()
+	api.conn.DoCommand(cmd)
+	answersList = list.New()
+	var answer string
+	for {
+		answer = api.readLine()
+		if strings.HasPrefix(answer, "error") {
+			err = parseQueryError(answer)
+			break
+		} else {
+			answersList.PushBack(answer)
+		}
+	}
+	api.commandMutex.Unlock()
+	return
+}
+
 // Login as user with password.
 func (api TS3Api) Login(user, password string) (qerr QueryError) {
 	cmd := "login " + user + " " + password
-	_, qerr = api.doCommand(cmd)
+	_, qerr = api.DoCommand(cmd)
 	return
 }
 
@@ -44,7 +64,7 @@ func (api TS3Api) Login(user, password string) (qerr QueryError) {
 // Logging out does not end the connection, you can login again afterwards.
 func (api TS3Api) Logout() (qerr QueryError) {
 	cmd := "logout"
-	_, qerr = api.doCommand(cmd)
+	_, qerr = api.DoCommand(cmd)
 	return
 }
 
@@ -53,7 +73,7 @@ func (api TS3Api) Logout() (qerr QueryError) {
 // After using this you can not use this TS3Api object anymore.
 func (api TS3Api) Quit() {
 	cmd := "quit"
-	api.doCommand(cmd)
+	api.DoCommand(cmd)
 	api.conn.Close()
 }
 
@@ -67,9 +87,9 @@ func (api TS3Api) RegisterEvent(event string, id int) (err error, qerr QueryErro
 	}
 	cmd := "servernotifyregister event=" + event
 	if event == "channel" {
-		_, qerr = api.doCommand(cmd + " id=" + strconv.Itoa(id))
+		_, qerr = api.DoCommand(cmd + " id=" + strconv.Itoa(id))
 	} else {
-		_, qerr = api.doCommand(cmd)
+		_, qerr = api.DoCommand(cmd)
 	}
 	return
 }
@@ -92,20 +112,20 @@ func (api TS3Api) SendTextMessage(targetmode int, target int, msg string) (err e
 	}
 	cmd := "sendtextmessage targetmode=" + strconv.Itoa(targetmode) +
 		" target=" + strconv.Itoa(target) + " msg=" + encodeValue(msg)
-	_, qerr = api.doCommand(cmd)
+	_, qerr = api.DoCommand(cmd)
 	return
 }
 
 // Select a virtualserver by id.
 func (api TS3Api) SelectVirtualServer(serverid int) {
 	cmd := "use " + strconv.Itoa(serverid)
-	api.doCommand(cmd)
+	api.DoCommand(cmd)
 }
 
 // Get informations about your self, like your id.
 func (api TS3Api) WhoAmI() (client *Me, qerr QueryError) {
 	cmd := "whoami"
-	answers, qerr := api.doCommand(cmd)
+	answers, qerr := api.DoCommand(cmd)
 	// TODO: error handling
 	arr := strings.Split(answers.Front().Value.(string), " ")
 	client = &Me{}
@@ -128,18 +148,18 @@ func (api TS3Api) WhoAmI() (client *Me, qerr QueryError) {
 // Move client with id clid to channel with id cid.
 func (api TS3Api) ClientMove(clid int, cid int) {
 	cmd := "clientmove clid=" + strconv.Itoa(clid) + " cid=" + strconv.Itoa(cid)
-	api.doCommand(cmd)
+	api.DoCommand(cmd)
 }
 
 // Set your own nick.
 func (api TS3Api) SetNick(nick string) (qerr QueryError) {
 	cmd := "clientupdate client_nickname=" + encodeValue(nick)
-	_, qerr = api.doCommand(cmd)
+	_, qerr = api.DoCommand(cmd)
 	return
 }
 
 func (api TS3Api) Version() (version string, build uint64, platform string, qerr QueryError) {
-	answers, qerr := api.doCommand("version")
+	answers, qerr := api.DoCommand("version")
 	var answer string = answers.Front().Value.(string)
 	parts := strings.Split(answer, " ")
 	var err error
@@ -184,7 +204,7 @@ type HostInfo struct {
 
 func (api TS3Api) Hostinfo() (info *HostInfo, qerr QueryError, err error) {
 	info = &HostInfo{}
-	answerList, qerr := api.doCommand("hostinfo")
+	answerList, qerr := api.DoCommand("hostinfo")
 	// TODO: handle errors
 	answer := answerList.Front().Value.(string)
 	params := strings.Split(answer, " ")
@@ -265,7 +285,7 @@ func (api TS3Api) Instanceinfo() (info *InstanceInfo, qerr QueryError, err error
 		serverinstance_pending_connections_per_ip=0
 	*/
 	info = &InstanceInfo{}
-	answerList, qerr := api.doCommand("instanceinfo")
+	answerList, qerr := api.DoCommand("instanceinfo")
 	// TODO: handle errors
 	answer := answerList.Front().Value.(string)
 	params := strings.Split(answer, " ")
@@ -336,7 +356,7 @@ func (api TS3Api) Instanceedit(properties [][]string) (qerr QueryError) {
 		props += " " + strings.ToLower(pel[0]) + "=" + encodeValue(pel[1])
 	}
 	cmd += props
-	_, qerr = api.doCommand(cmd)
+	_, qerr = api.DoCommand(cmd)
 	return
 }
 
@@ -415,7 +435,7 @@ func (api TS3Api) Serverlist(all bool, onlyoffline bool, uid bool) (serverlist l
 		cmd += " -onlyoffline"
 	}
 	var alist *list.List
-	alist, qerr = api.doCommand(cmd)
+	alist, qerr = api.DoCommand(cmd)
 	for e := alist.Front(); e != nil; e = e.Next() {
 		sEntry := ServerListEntry{}
 		sEntry.parseMsg(e.Value.(string))

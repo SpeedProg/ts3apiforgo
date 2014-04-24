@@ -10,6 +10,7 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -19,6 +20,7 @@ type TS3Api struct {
 	conn         *ts3Connection
 	lineList     *list.List
 	listenerList *list.List
+	commandMutex *sync.Mutex
 }
 
 type QueryError struct {
@@ -160,22 +162,6 @@ func (api TS3Api) readLine() (msg string) {
 	api.lineList.Remove(element)
 	msg = element.Value.(string)
 	logger.Trace("Taken From Message Queue: %s", msg)
-	return
-}
-
-func (api TS3Api) doCommand(cmd string) (answersList *list.List, err QueryError) {
-	api.conn.DoCommand(cmd)
-	answersList = list.New()
-	var answer string
-	for {
-		answer = api.readLine()
-		if strings.HasPrefix(answer, "error") {
-			err = parseQueryError(answer)
-			break
-		} else {
-			answersList.PushBack(answer)
-		}
-	}
 	return
 }
 
