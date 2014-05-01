@@ -174,6 +174,7 @@ func (api TS3Api) SetNick(nick string) (qerr QueryError) {
 	return
 }
 
+// server verion, build and platform
 func (api TS3Api) Version() (version string, build uint64, platform string, qerr QueryError) {
 	answers, qerr := api.DoCommand("version")
 	var answer string = answers.Front().Value.(string)
@@ -218,6 +219,7 @@ type HostInfo struct {
 	BandwidthReceivedLastMinute      uint64
 }
 
+// information about the serverinstance like number of virtual servers, uptime ...
 func (api TS3Api) Hostinfo() (info *HostInfo, qerr QueryError, err error) {
 	info = &HostInfo{}
 	answerList, qerr := api.DoCommand("hostinfo")
@@ -296,6 +298,7 @@ type InstanceInfo struct {
 	PendingConPerIP       uint
 }
 
+// infromation about the instance like, file transfer port ...
 func (api TS3Api) Instanceinfo() (info *InstanceInfo, qerr QueryError, err error) {
 	/*
 		serverinstance_pending_connections_per_ip=0
@@ -372,6 +375,7 @@ func (api TS3Api) Instanceedit(properties [][]string) (qerr QueryError) {
 	return
 }
 
+// A list of virtual servers and informations about them
 // Gives a list.List of struct ServerListEntry
 func (api TS3Api) Serverlist(all bool, onlyoffline bool, uid bool) (serverlist list.List, qerr QueryError) {
 	cmd := "serverlist"
@@ -394,6 +398,7 @@ func (api TS3Api) Serverlist(all bool, onlyoffline bool, uid bool) (serverlist l
 	return
 }
 
+// select a virtual server by id
 func (api TS3Api) UseById(sid int, virtual bool) (err error, qerr QueryError) {
 	cmd := "use sid=" + strconv.Itoa(sid)
 	if virtual {
@@ -403,6 +408,7 @@ func (api TS3Api) UseById(sid int, virtual bool) (err error, qerr QueryError) {
 	return
 }
 
+// select a virtual server by port
 func (api TS3Api) UseByPort(port int, virtual bool) (qerr QueryError) {
 	cmd := "use port=" + strconv.Itoa(port)
 	if virtual {
@@ -412,6 +418,7 @@ func (api TS3Api) UseByPort(port int, virtual bool) (qerr QueryError) {
 	return
 }
 
+// get server id from port
 func (api TS3Api) ServerIdGetByPort(port int) (id int, qerr QueryError) {
 	id = -1
 	cmd := "serveridgetbyport virtualserver_port=" + strconv.Itoa(port)
@@ -423,6 +430,7 @@ func (api TS3Api) ServerIdGetByPort(port int) (id int, qerr QueryError) {
 	return
 }
 
+// delets a virtual server
 func (api TS3Api) ServerDelete(port int) (qerr QueryError) {
 	cmd := "serverdelete sid=" + strconv.Itoa(port)
 	_, qerr = api.DoCommand(cmd)
