@@ -534,3 +534,28 @@ func (api TS3Api) ServerProcessStop() (qerr QueryError) {
 	_, qerr = api.DoCommand("serverprocessstop")
 	return
 }
+
+// Configuration information about the selected virtual server
+func (api TS3Api) ServerInfo() (sInfo *Serverinfo, qerr QueryError) {
+	var aList *list.List
+	aList, qerr = api.DoCommand("serverinfo")
+	if qerr.Id != 0 {
+		return
+	}
+	msg := aList.Front().Value.(string)
+	info := &Serverinfo{}
+	info.parseMsg(msg)
+	return
+}
+
+// Connection information about the selected virtual server
+func (api TS3Api) Connectioninfo() (conInfo *Connectioninfo, qerr QueryError) {
+	aList, qerr := api.DoCommand("serverrequestconnectioninfo")
+	if qerr.Id != 0 {
+		return
+	}
+	msg := aList.Front().Value.(string)
+	info := &Connectioninfo{}
+	info.parseMsg(msg)
+	return
+}
