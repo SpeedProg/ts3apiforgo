@@ -490,3 +490,47 @@ func (api TS3Api) ServerDelete(port int) (qerr QueryError) {
 	_, qerr = api.DoCommand(cmd)
 	return
 }
+
+// For properties appart from the server name, look in ts3const package
+func (api TS3Api) ServerCreate(name string, props [][]string) (sid int, port int, token string, qerr QueryError) {
+	cmd := "servercreate virtualserver_name=" + encodeValue(name)
+	cmd += cmdStringFromProperties(props)
+	alist, qerr := api.DoCommand(cmd)
+	line := alist.Front().Value.(string)
+	pairS := strings.Split(line, " ")
+	for _, e := range pairS {
+		pair := strings.SplitN(e, "=", 2)
+		switch pair[0] {
+		case "sid":
+			sid, _ = strconv.Atoi(pair[1])
+		case "virtualserver_port":
+			port, _ = strconv.Atoi(pair[1])
+		case "toke":
+			token = pair[1]
+		default:
+			logger.Error("ServerCreate: Pair %s=%s not valid.", pair[0], pair[1])
+		}
+	}
+	return
+}
+
+// Starts the virtual server with the given sid
+func (api TS3Api) ServerStart(sid int) (qerr QueryError) {
+	cmd := "serverstart sid=" + strconv.Itoa(sid)
+	_, qerr = api.DoCommand(cmd)
+	return
+}
+
+// Stops the virtual server with the given sid
+func (api TS3Api) ServerStop(sid int) (qerr QueryError) {
+	cmd := "serverstop sid=" + strconv.Itoa(sid)
+	_, qerr = api.DoCommand(cmd)
+	return
+}
+
+// Stops the server process, be carefull using this,
+// you won't be able to start it again  using query api because it is gone.
+func (api TS3Api) ServerProcessStop() (qerr QueryError) {
+	_, qerr = api.DoCommand("serverprocessstop")
+	return
+}
