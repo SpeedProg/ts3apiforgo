@@ -24,6 +24,7 @@ import (
 	"code.google.com/p/log4go"
 	"container/list"
 	"errors"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -45,8 +46,10 @@ type QueryError struct {
 }
 
 func init() {
-	logger = log4go.NewLogger()
-	logger.LoadConfiguration("ts3api_log4go.xml")
+	logger = log4go.NewDefaultLogger(log4go.ERROR)
+	if fileExists("ts3api_log4go.xml") {
+		logger.LoadConfiguration("ts3api_log4go.xml")
+	}
 }
 
 func (api TS3Api) reader(ch chan<- bool) {
@@ -324,4 +327,13 @@ func cmdStringFromProperties(props [][]string) (cmd string) {
 		cmd += " " + strings.ToLower(pel[0]) + "=" + encodeValue(pel[1])
 	}
 	return
+}
+
+func fileExists(file string) bool {
+	fh, err := os.Open(file)
+	if os.IsExist(err) {
+		fh.Close()
+		return true
+	}
+	return false
 }
