@@ -382,7 +382,7 @@ type ServerListEntry struct {
 	VSMaxCl     int
 	VSUTime     uint64
 	VSName      string
-	VSAutostrt  bool
+	VSAutostart bool
 	VSMachinId  int
 	VSUID       string
 }
@@ -418,7 +418,7 @@ func (entry *ServerListEntry) parseParam(k, v string) (err error) {
 	case "virtualserver_name":
 		entry.VSName = v
 	case "virtualserver_autostart":
-		entry.VSAutostrt, err = getBoolFromString(v)
+		entry.VSAutostart, err = getBoolFromString(v)
 	case "virtualserver_machine_id":
 		if v == "" {
 			entry.VSMachinId = -1
