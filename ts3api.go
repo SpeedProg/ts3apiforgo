@@ -317,3 +317,11 @@ func decodeValue(s string) string {
 	s = strings.Replace(s, "\\[$]", "\\", -1)
 	return s
 }
+
+// Creats a command string with a leading space
+func cmdStringFromProperties(props [][]string) (cmd string) {
+	for _, pel := range props {
+		cmd += " " + strings.ToLower(pel[0]) + "=" + encodeValue(pel[1])
+	}
+	return
+}

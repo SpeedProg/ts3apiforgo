@@ -367,11 +367,7 @@ func (api TS3Api) Instanceinfo() (info *InstanceInfo, qerr QueryError, err error
 // Valid Properties are found as constants starting with SERVERINSTANCE_ in ts3const.
 func (api TS3Api) Instanceedit(properties [][]string) (qerr QueryError) {
 	cmd := "instanceedit"
-	props := ""
-	for _, pel := range properties {
-		props += " " + strings.ToLower(pel[0]) + "=" + encodeValue(pel[1])
-	}
-	cmd += props
+	cmd += cmdStringFromProperties(properties)
 	_, qerr = api.DoCommand(cmd)
 	return
 }
